@@ -37,6 +37,7 @@ When a QB's pass play breaks down under pressure, does leaving the script help o
 - First-pass preview built: https://claude.ai/artifact/Twf3dsqZojotN9y1Lx95Rq
 - The preview labels plays off-script with PFF's `dropBackType` (SCRAMBLE*), counts a play as pressured if pressure happened at any point, and shows raw QB rates. It does not yet follow the definitions above (tracking-based chaos, pressure moment, shrinkage), so it still carries the survivorship bias.
 - In the replay, the QB trail changes color when he leaves the tackle box.
+- Steps 1 to 4 are implemented in `src/` (`play_context`, `tracking_features`, `thresholds`, `labels`, `league`). Thresholds and the reason for each are in `src/config.py`. Designed rollouts and designed runs are left out. Plays that went off script before the pressure frame count as chaos.
 - Not built yet: optional view 4.
 
 ## Visualiser

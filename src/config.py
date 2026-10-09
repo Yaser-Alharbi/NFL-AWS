@@ -17,16 +17,45 @@ FIELD_WIDTH = 53.3
 # Success: gain >= ratio * yardsToGo, by down (from tasks.md).
 SUCCESS_RATIO = {1: 0.4, 2: 0.6, 3: 1.0, 4: 1.0}
 
-# Chaos and pressure thresholds. Set in Task 3 from the data.
-PRESSURE_DISTANCE = None    # yards, rusher to QB; set in Task 3
-DRIFT_THRESHOLD = None      # yards from the drop spot; set in Task 3
-HOLD_TIME_THRESHOLD = None  # seconds from the snap; set in Task 3
+# Chaos and pressure thresholds, chosen in Task 3 (``python -m src.thresholds``).
+# Pressure: best split of min rusher distance, PFF-pressured vs clean plays (Youden J 0.622).
+PRESSURE_DISTANCE = 2.1     # yards, rusher to QB
+# Drift: 95th percentile of max drift on clean pass plays (not fitted on dropBackType).
+DRIFT_THRESHOLD = 2.74      # yards from the drop spot
+# Hold: 95th percentile of time held on clean pass plays (same rule as drift).
+HOLD_TIME_THRESHOLD = 4.0   # seconds from the snap
+
+# Sensitivity check: (down, up) value per threshold, from the same plots.
+SENSITIVITY = {
+    "pressure_distance": (1.6, 2.6),  # +/-0.5 yd; Youden J 0.527 / 0.521
+    "drift": (1.48, 12.26),           # clean pass p90 / p99
+    "hold": (3.6, 5.5),               # clean pass p90 / p99
+}
+
+# League curve: success by seconds held after pressure.
+CURVE_BIN_SECONDS = 0.5   # median post-pressure time is 0.7 s; 0.5 s splits the first 2 s into 4 bins
+CURVE_MAX_SECONDS = 3.5   # 95th percentile of post-pressure time; later plays pooled in a "3.5+" bin
+
+# Tie-break when two chaos rules fire on the same frame: the first listed wins.
+# Box exit is the clearest visible event; hold time is only a clock.
+OFF_SCRIPT_RULE_ORDER = ["box", "drift", "hold"]
 
 # Format for intermediate tables in OUTPUTS_DIR.
 OUTPUT_FORMAT = "csv"
 PLAY_CONTEXT_PATH = OUTPUTS_DIR / f"play_context.{OUTPUT_FORMAT}"
 TRACKING_FEATURES_PATH = OUTPUTS_DIR / f"tracking_features.{OUTPUT_FORMAT}"
 QB_FRAMES_PATH = OUTPUTS_DIR / f"qb_frames.{OUTPUT_FORMAT}"
+PLAY_LABELS_PATH = OUTPUTS_DIR / f"play_labels.{OUTPUT_FORMAT}"
+LABEL_DISAGREEMENTS_PATH = OUTPUTS_DIR / f"label_disagreements.{OUTPUT_FORMAT}"
+LEAGUE_SUMMARY_PATH = OUTPUTS_DIR / f"league_summary.{OUTPUT_FORMAT}"
+LEAGUE_CURVE_PATH = OUTPUTS_DIR / f"league_curve.{OUTPUT_FORMAT}"
+SENSITIVITY_PATH = OUTPUTS_DIR / f"sensitivity.{OUTPUT_FORMAT}"
+PLOTS_DIR = OUTPUTS_DIR / "plots"
+
+# dropBackType groups. Designed plays are left out of labels and analysis
+# (movement is part of the call); scramble types are the expected chaos plays.
+DESIGNED_DROPBACKS = ["DESIGNED_ROLLOUT_LEFT", "DESIGNED_ROLLOUT_RIGHT", "DESIGNED_RUN"]
+CHAOS_DROPBACKS = ["SCRAMBLE", "SCRAMBLE_ROLLOUT_LEFT", "SCRAMBLE_ROLLOUT_RIGHT"]
 
 # Tracking event names, from a scan of all 122 tracking files.
 # Each list is in order of preference: the first name found on a play wins.

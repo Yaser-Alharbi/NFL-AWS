@@ -27,24 +27,24 @@ Rules: only `Dataset/`, QBs only, no invented numbers. Every threshold is set fr
 - [x] Max drift from the drop spot, up to the end frame.
 - [x] Tackle box: lateral span between the two tackles at the snap (from `pff_positionLinedUp`). First frame the QB leaves it.
 - [x] Time held: snap to end frame, in seconds.
-- [ ] Pressure frame: first frame any pass rusher is within the pressure distance of the QB.
+- [x] Pressure frame: first frame any pass rusher is within the pressure distance of the QB.
 - [x] Per-frame QB drift and box status kept for the replay export.
 - [x] Save `outputs/tracking_features`. Report plays with missing frames or events.
 
 ## 3. Thresholds and labels
-- [ ] Plot distributions of rusher-QB distance, max drift and time held.
-- [ ] Choose the pressure distance, drift threshold and hold-time threshold from those plots. Record them in the config with a one-line reason each.
-- [ ] Label each play `scripted` or `chaos` (drift OR box exit OR hold-time breach).
-- [ ] Record the off-script frame: first frame any chaos rule is broken.
-- [ ] Cross-tab labels against `dropBackType`. Report agreement and inspect the disagreements.
-- [ ] Sensitivity check: rerun the main result with each threshold moved up and down.
+- [x] Plot distributions of rusher-QB distance, max drift and time held.
+- [x] Choose the pressure distance, drift threshold and hold-time threshold from those plots. Record them in the config with a one-line reason each.
+- [x] Label each play `scripted` or `chaos` (drift OR box exit OR hold-time breach).
+- [x] Record the off-script frame: first frame any chaos rule is broken.
+- [x] Cross-tab labels against `dropBackType`. Report agreement and inspect the disagreements.
+- [x] Sensitivity check: rerun the main result with each threshold moved up and down.
 
 ## 4. League-level analysis
-- [ ] Filter to pressured plays, measured from the pressure frame (the self-selection fix).
-- [ ] Decide how to handle plays where chaos started before pressure. Document the choice.
-- [ ] Success, sack and INT rate for scripted vs chaos, with play counts.
-- [ ] Success rate by seconds held after pressure, one curve for scripted and one for chaos. Show the counts per bin.
-- [ ] Survivorship check: how many sacks get labelled chaos under the tracking rules vs under `dropBackType`.
+- [x] Filter to pressured plays, measured from the pressure frame (the self-selection fix).
+- [x] Decide how to handle plays where chaos started before pressure. Document the choice.
+- [x] Success, sack and INT rate for scripted vs chaos, with play counts.
+- [x] Success rate by seconds held after pressure, one curve for scripted and one for chaos. Show the counts per bin.
+- [x] Survivorship check: how many sacks get labelled chaos under the tracking rules vs under `dropBackType`.
 
 ## 5. Per-QB chaos value
 - [ ] Per QB: pressured plays, chaos plays, scripted plays, chaos rate under pressure.
