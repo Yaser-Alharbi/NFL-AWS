@@ -2,6 +2,8 @@
 
 **Winner, NFL x UCL CDI x AWS Big Data Bowl Hackathon (London)**
 
+**Team:** [Ansh Shah](https://github.com/shahansh004) · [Yaser Alharbi](https://github.com/Yaser-Alharbi)
+
 Live Demo:
 
 https://yaser-alharbi.github.io/NFL-AWS-Hackathon-Winner/
