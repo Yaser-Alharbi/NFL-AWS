@@ -4,32 +4,32 @@ Implementation tasks (steps 1 to 5 of `plan.md`) plus the data handoff to the vi
 Rules: only `Dataset/`, QBs only, no invented numbers. Every threshold is set from the data and recorded in one config.
 
 ## 0. Setup
-- [ ] Project layout: `src/` (pipeline code), `outputs/` (intermediate tables), `export/` (JSON for the visualiser).
-- [ ] One config file holding every threshold and path (pressure distance, drift, hold time, success ratios).
-- [ ] Loader for games, plays, players, PFF scouting.
-- [ ] Tracking loader that reads one game file at a time (122 files, too big to load together).
-- [ ] Normalize coordinates so the offense always moves the same way (use `playDirection`).
+- [x] Project layout: `src/` (pipeline code), `outputs/` (intermediate tables), `export/` (JSON for the visualiser).
+- [x] One config file holding every threshold and path (pressure distance, drift, hold time, success ratios).
+- [x] Loader for games, plays, players, PFF scouting.
+- [x] Tracking loader that reads one game file at a time (122 files, too big to load together).
+- [x] Normalize coordinates so the offense always moves the same way (use `playDirection`).
 
 ## 1. Play context
-- [ ] One row per play (`gameId`, `playId`).
-- [ ] QB `nflId` from PFF (`pff_role == Pass`). Flag and report plays with zero or multiple passers.
-- [ ] Down, yards to go, `prePenaltyPlayResult`, `passResult`, `dropBackType`.
-- [ ] Pressure flag: any rusher with `pff_hit`, `pff_hurry` or `pff_sack` on the play.
-- [ ] Success flag: gain >= 40% of yards to go (1st), 60% (2nd), 100% (3rd/4th).
-- [ ] Sack flag (`passResult == S`) and INT flag (`passResult == IN`).
-- [ ] Report row counts and how many plays each filter drops.
-- [ ] Save `outputs/play_context`.
+- [x] One row per play (`gameId`, `playId`).
+- [x] QB `nflId` from PFF (`pff_role == Pass`). Flag and report plays with zero or multiple passers.
+- [x] Down, yards to go, `prePenaltyPlayResult`, `passResult`, `dropBackType`.
+- [x] Pressure flag: any rusher with `pff_hit`, `pff_hurry` or `pff_sack` on the play.
+- [x] Success flag: gain >= 40% of yards to go (1st), 60% (2nd), 100% (3rd/4th).
+- [x] Sack flag (`passResult == S`) and INT flag (`passResult == IN`).
+- [x] Report row counts and how many plays each filter drops.
+- [x] Save `outputs/play_context`.
 
 ## 2. Tracking features per play
-- [ ] Snap frame (`event == ball_snap`). List event values first; do not assume names.
-- [ ] End frame: first of pass forward, sack, QB run past the line, or play end. Record which one.
-- [ ] Drop spot: QB position at the end of the drop (define and document the rule).
-- [ ] Max drift from the drop spot, up to the end frame.
-- [ ] Tackle box: lateral span between the two tackles at the snap (from `pff_positionLinedUp`). First frame the QB leaves it.
-- [ ] Time held: snap to end frame, in seconds.
+- [x] Snap frame (`event == ball_snap`). List event values first; do not assume names.
+- [x] End frame: first of pass forward, sack, QB run past the line, or play end. Record which one.
+- [x] Drop spot: QB position at the end of the drop (define and document the rule).
+- [x] Max drift from the drop spot, up to the end frame.
+- [x] Tackle box: lateral span between the two tackles at the snap (from `pff_positionLinedUp`). First frame the QB leaves it.
+- [x] Time held: snap to end frame, in seconds.
 - [ ] Pressure frame: first frame any pass rusher is within the pressure distance of the QB.
-- [ ] Per-frame QB drift and box status kept for the replay export.
-- [ ] Save `outputs/tracking_features`. Report plays with missing frames or events.
+- [x] Per-frame QB drift and box status kept for the replay export.
+- [x] Save `outputs/tracking_features`. Report plays with missing frames or events.
 
 ## 3. Thresholds and labels
 - [ ] Plot distributions of rusher-QB distance, max drift and time held.
