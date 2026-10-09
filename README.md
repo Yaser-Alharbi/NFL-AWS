@@ -1,4 +1,4 @@
-# Script vs Chaos
+# Quarter-Back Improvisation Insight
 
 > When a QB's pass play breaks down under pressure, does leaving the script help or hurt?
 
