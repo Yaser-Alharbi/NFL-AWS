@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chaos Replay Viewer</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #6b7385; --border: #e2e5eb;
+  --accent: #2563eb; --chaos: #d9480f; --off: #2563eb; --def: #e03131; --ball: #8b5a2b;
+  --field: #2f7d46; --field-alt: #2b7441; --line: rgba(255,255,255,.75); --box: rgba(255,214,10,.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1218; --panel: #171b23; --text: #e6e8ee; --muted: #8b93a5; --border: #262c38;
+    --accent: #5b8cff; --off: #5b8cff; --def: #ff6b6b;
+    --field: #1f5a33; --field-alt: #1c5330;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; }
+.app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+aside { border-right: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+aside header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+aside h1 { font-size: 16px; margin: 0 0 4px; }
+aside .rule { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+input[type=search] { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+#list { overflow-y: auto; flex: 1; }
+.item { padding: 9px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.item:hover { background: var(--bg); }
+.item.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.item .t { font-weight: 600; }
+.item .s { color: var(--muted); font-size: 12px; }
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 16px; gap: 12px; overflow-y: auto; }
+.title { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.title h2 { margin: 0; font-size: 16px; }
+.title .desc { color: var(--muted); font-size: 12px; max-width: 900px; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); align-items: center; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+#wrap { position: relative; width: 100%; aspect-ratio: 120 / 53.3; background: var(--field); border-radius: 8px; overflow: hidden; }
+#wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.controls { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.controls button, .controls select { border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; padding: 5px 10px; cursor: pointer; font: inherit; }
+.track { position: relative; flex: 1; }
+.track input { width: 100%; margin: 0; }
+#chaosTick { position: absolute; top: -6px; width: 2px; height: 8px; background: var(--chaos); pointer-events: none; }
+#frameLbl { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 150px; text-align: right; }
+.events { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.events h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.events ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.events li { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums; }
+.events li.past { color: var(--text); }
+.events li.now { background: var(--accent); border-color: var(--accent); color: #fff; }
+.events li.chaos { border-color: var(--chaos); }
+.events li.chaos.now { background: var(--chaos); }
+.empty { color: var(--muted); padding: 40px; text-align: center; }
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; height: auto; }
+  aside { border-right: 0; border-bottom: 1px solid var(--border); }
+  main { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <header>
+      <h1>Chaos events</h1>
+      <p class="rule" id="rule">Loading…</p>
+      <input type="search" id="filter" placeholder="Filter by QB, team, week…">
+    </header>
+    <div id="list"></div>
+  </aside>
+  <main>
+    <div class="title">
+      <div>
+        <h2 id="playTitle">Select an event</h2>
+        <div class="desc" id="playDesc"></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--off)"></span>Offense</span>
+        <span><span class="dot" style="background:var(--def)"></span>Defense</span>
+        <span><span class="dot" style="background:var(--ball)"></span>Ball</span>
+        <span><span class="dot" style="background:var(--box);outline:1px solid var(--border)"></span>Tackle box</span>
+        <span><span class="dot" style="background:var(--chaos)"></span>QB path after chaos</span>
+      </div>
+    </div>
+    <div id="wrap"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
+    <div class="controls">
+      <button id="play" title="Space">Play</button>
+      <button id="toChaos" title="Jump to chaos frame">Chaos</button>
+      <select id="speed" title="Playback frames per second">
+        <option value="5">5 fps</option><option value="10" selected>10 fps</option><option value="20">20 fps</option>
+      </select>
+      <div class="track"><input type="range" id="slider" min="0" max="0" value="0"><div id="chaosTick"></div></div>
+      <span id="frameLbl"></span>
+    </div>
+    <div class="events">
+      <h3>Events (click to jump)</h3>
+      <ol id="events"></ol>
+    </div>
+  </main>
+</div>
+<script id="embedded-data" type="application/json"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const FW = 120, FH = 53.3;
+  let data, play = null, idx = 0, playing = false, last = 0, acc = 0, scale = 1, colors = {};
+
+  async function load() {
+    const emb = $('embedded-data').textContent.trim();
+    data = emb ? JSON.parse(emb) : await (await fetch('data/replays.json')).json();
+    const m = data.meta;
+    $('rule').textContent = `${m.exported} plays. Rule: ${m.rule}. Built ${m.built}.`;
+    renderList('');
+    if (data.plays.length) select(0);
+  }
+
+  function label(p) {
+    return { t: `${p.qbName} · ${p.offense} vs ${p.defense}`,
+             s: `Wk ${p.week} · Q${p.quarter} ${p.clock} · ${p.down}&${p.yardsToGo} · ${p.dropBackType} · frame ${p.chaosFrame}` };
+  }
+
+  function renderList(q) {
+    q = q.toLowerCase();
+    const frag = document.createDocumentFragment();
+    data.plays.forEach((p, i) => {
+      const l = label(p);
+      if (q && !(l.t + ' ' + l.s + ' ' + p.gameId + ' ' + p.playId).toLowerCase().includes(q)) return;
+      const d = document.createElement('div');
+      d.className = 'item' + (play === p ? ' sel' : '');
+      d.dataset.i = i;
+      d.innerHTML = `<div class="t"></div><div class="s"></div>`;
+      d.firstChild.textContent = l.t; d.lastChild.textContent = l.s;
+      frag.appendChild(d);
+    });
+    $('list').replaceChildren(frag);
+  }
+
+  function select(i) {
+    play = data.plays[i];
+    document.querySelectorAll('.item.sel').forEach(e => e.classList.remove('sel'));
+    const el = document.querySelector(`.item[data-i="${i}"]`);
+    if (el) el.classList.add('sel');
+    const l = label(play);
+    $('playTitle').textContent = `${l.t} — game ${play.gameId}, play ${play.playId}`;
+    $('playDesc').textContent = play.description;
+    const s = $('slider');
+    s.max = play.frames.length - 1;
+    idx = play.chaosFrame - play.firstFrame;
+    s.value = idx;
+    $('chaosTick').style.left = `calc(${(idx / Math.max(1, s.max)) * 100}% - 1px)`;
+    setPlaying(false);
+    renderEvents();
+    drawBg(); drawFg();
+  }
+
+  function resize() {
+    const w = $('wrap'), dpr = window.devicePixelRatio || 1;
+    const W = w.clientWidth, H = w.clientHeight;
+    for (const c of [$('bg'), $('fg')]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
+    scale = W / FW;
+    colors = { off: css('--off'), def: css('--def'), ball: css('--ball'), field: css('--field'), alt: css('--field-alt'),
+               line: css('--line'), box: css('--box'), chaos: css('--chaos') };
+    if (play) { drawBg(); drawFg(); }
+  }
+
+  const X = x => x * scale, Y = y => (FH - y) * scale;
+
+  function drawBg() {
+    const g = $('bg').getContext('2d');
+    g.clearRect(0, 0, X(FW), X(FH));
+    for (let x = 10; x < 110; x += 10) { g.fillStyle = (x / 10) % 2 ? colors.field : colors.alt; g.fillRect(X(x), 0, X(10), X(FH)); }
+    g.fillStyle = colors.alt; g.fillRect(0, 0, X(10), X(FH)); g.fillRect(X(110), 0, X(10), X(FH));
+    g.strokeStyle = colors.line; g.lineWidth = 1;
+    for (let x = 10; x <= 110; x += 5) { g.globalAlpha = x % 10 ? .45 : .9; g.beginPath(); g.moveTo(X(x), 0); g.lineTo(X(x), X(FH)); g.stroke(); }
+    g.globalAlpha = .6;
+    for (let x = 11; x < 110; x++) for (const y of [0.5, 23.37, 29.97, FH - 0.5]) { g.beginPath(); g.moveTo(X(x), Y(y) - 2); g.lineTo(X(x), Y(y) + 2); g.stroke(); }
+    g.globalAlpha = .8; g.fillStyle = colors.line; g.font = `600 ${Math.max(10, scale * 1.8)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let x = 20; x <= 100; x += 10) { const n = 50 - Math.abs(x - 60); g.fillText(String(n), X(x), Y(12)); g.fillText(String(n), X(x), Y(FH - 12)); }
+    g.globalAlpha = 1;
+    if (play) {
+      const [lo, hi] = play.box;
+      g.fillStyle = colors.box; g.fillRect(0, Y(hi), X(FW), Y(lo) - Y(hi));
+    }
+  }
+
+  function drawFg() {
+    const g = $('fg').getContext('2d');
+    g.clearRect(0, 0, X(FW), X(FH));
+    if (!play) return;
+    const fr = play.frames[idx], r = Math.max(7, scale * 1.05);
+    // QB trail up to current frame
+    const qi = play.entities.findIndex(e => e.id === play.qbId);
+    g.lineWidth = 2; g.lineCap = 'round';
+    for (let k = 1; k <= idx; k++) {
+      const a = play.frames[k - 1][qi], b = play.frames[k][qi];
+      if (!a || !b) continue;
+      g.strokeStyle = (k + play.firstFrame >= play.chaosFrame) ? colors.chaos : colors.off;
+      g.globalAlpha = .7;
+      g.beginPath(); g.moveTo(X(a[0] / 10), Y(a[1] / 10)); g.lineTo(X(b[0] / 10), Y(b[1] / 10)); g.stroke();
+    }
+    g.globalAlpha = 1;
+    g.font = `700 ${Math.round(r * 1.05)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const order = play.entities.map((e, k) => k).sort((a, b) => (play.entities[a].team === 'football') - (play.entities[b].team === 'football'));
+    order.forEach(k => {
+      const e = play.entities[k], p = fr[k]; if (!p) return;
+      const cx = X(p[0] / 10), cy = Y(p[1] / 10);
+      if (e.team === 'football') {
+        g.fillStyle = colors.ball; g.strokeStyle = '#fff'; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(cx, cy, r * .55, r * .38, 0, 0, Math.PI * 2); g.fill(); g.stroke(); return;
+      }
+      const col = e.team === play.offense ? colors.off : colors.def;
+      if (p[2] >= 0) {
+        // orientation: 0 deg = +y, clockwise; screen y is flipped
+        const t = p[2] * Math.PI / 180, dx = Math.sin(t), dy = -Math.cos(t), px = -dy, py = dx;
+        g.fillStyle = col;
+        g.beginPath();
+        g.moveTo(cx + dx * r * 2.4, cy + dy * r * 2.4);
+        g.lineTo(cx + px * r * .9, cy + py * r * .9);
+        g.lineTo(cx - px * r * .9, cy - py * r * .9);
+        g.closePath(); g.fill();
+      }
+      g.fillStyle = col; g.strokeStyle = e.id === play.qbId ? '#ffd60a' : '#fff'; g.lineWidth = e.id === play.qbId ? 3 : 1.5;
+      g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.fillStyle = '#fff'; g.fillText(e.jersey ?? '', cx, cy + .5);
+    });
+    const f = idx + play.firstFrame;
+    $('frameLbl').textContent = `frame ${f} · ${f === play.chaosFrame ? 'chaos' : (f > play.chaosFrame ? '+' : '') + (f - play.chaosFrame)}`;
+    updateEventState(f);
+  }
+
+  function renderEvents() {
+    const evs = play.events.map(([f, n]) => ({ f, n }));
+    evs.push({ f: play.chaosFrame, n: 'chaos: QB leaves tackle box (derived)', chaos: true });
+    evs.sort((a, b) => a.f - b.f);
+    const frag = document.createDocumentFragment();
+    for (const e of evs) {
+      const li = document.createElement('li');
+      li.textContent = `${e.n} · f${e.f}`;
+      li.dataset.f = e.f;
+      if (e.chaos) li.classList.add('chaos');
+      const inClip = e.f >= play.firstFrame && e.f < play.firstFrame + play.frames.length;
+      if (!inClip) { li.title = 'Outside the loaded clip'; li.style.opacity = .5; li.style.cursor = 'default'; }
+      frag.appendChild(li);
+    }
+    $('events').replaceChildren(frag);
+  }
+
+  function updateEventState(f) {
+    const lis = $('events').children;
+    let nowF = -1;
+    for (const li of lis) if (+li.dataset.f <= f) nowF = Math.max(nowF, +li.dataset.f);
+    for (const li of lis) {
+      const lf = +li.dataset.f;
+      li.classList.toggle('past', lf <= f);
+      li.classList.toggle('now', lf === nowF);
+    }
+  }
+
+  function setFrame(i) {
+    idx = Math.max(0, Math.min(play.frames.length - 1, i));
+    $('slider').value = idx;
+    drawFg();
+  }
+
+  function setPlaying(v) {
+    playing = v; $('play').textContent = v ? 'Pause' : 'Play';
+    if (v) { if (idx >= play.frames.length - 1) setFrame(0); last = performance.now(); acc = 0; requestAnimationFrame(tick); }
+  }
+
+  function tick(now) {
+    if (!playing) return;
+    acc += now - last; last = now;
+    const step = 1000 / +$('speed').value;
+    if (acc >= step) {
+      const n = Math.floor(acc / step); acc -= n * step;
+      if (idx + n >= play.frames.length - 1) { setFrame(play.frames.length - 1); setPlaying(false); return; }
+      setFrame(idx + n);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  $('list').addEventListener('click', e => { const it = e.target.closest('.item'); if (it) select(+it.dataset.i); });
+  $('filter').addEventListener('input', e => renderList(e.target.value));
+  $('slider').addEventListener('input', e => { setPlaying(false); setFrame(+e.target.value); });
+  $('play').addEventListener('click', () => play && setPlaying(!playing));
+  $('toChaos').addEventListener('click', () => { if (play) { setPlaying(false); setFrame(play.chaosFrame - play.firstFrame); } });
+  $('events').addEventListener('click', e => {
+    const li = e.target.closest('li'); if (!li || !play) return;
+    const i = +li.dataset.f - play.firstFrame;
+    if (i >= 0 && i < play.frames.length) { setPlaying(false); setFrame(i); }
+  });
+  document.addEventListener('keydown', e => {
+    if (!play || e.target.tagName === 'INPUT' && e.target.type === 'search') return;
+    if (e.key === 'ArrowRight') { setPlaying(false); setFrame(idx + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { setPlaying(false); setFrame(idx - 1); e.preventDefault(); }
+    else if (e.key === ' ') { setPlaying(!playing); e.preventDefault(); }
+  });
+  new ResizeObserver(resize).observe($('wrap'));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resize);
+  resize();
+  load().catch(err => { $('rule').textContent = 'Failed to load data: ' + err.message + ' (serve the folder over HTTP, or use standalone.html)'; });
+})();
+</script>
+</body>
+</html>
