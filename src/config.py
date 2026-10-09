@@ -40,6 +40,14 @@ CURVE_MAX_SECONDS = 3.5   # 95th percentile of post-pressure time; later plays p
 # Box exit is the clearest visible event; hold time is only a clock.
 OFF_SCRIPT_RULE_ORDER = ["box", "drift", "hold"]
 
+# Per-QB summary (Task 5, ``python -m src.qb_summary``).
+QB_POSITION = "QB"          # players.officialPosition kept as passers (QBs only)
+# Min pressured chaos plays AND min pressured scripted plays for a QB to appear in the visualiser.
+# 8 keeps the same 35 QBs as the gap in pressured plays per QB (15 to 21); the 19 dropped have <= 15.
+QB_MIN_PLAYS = 8
+# Quadrant splits are the pooled league values (chaos rate, chaos value), computed in src.qb_summary.
+# Not 0 for chaos value: every QB's shrunk value is below 0 (max -0.016), so 0 left two corners empty.
+
 # Format for intermediate tables in OUTPUTS_DIR.
 OUTPUT_FORMAT = "csv"
 PLAY_CONTEXT_PATH = OUTPUTS_DIR / f"play_context.{OUTPUT_FORMAT}"
@@ -50,6 +58,8 @@ LABEL_DISAGREEMENTS_PATH = OUTPUTS_DIR / f"label_disagreements.{OUTPUT_FORMAT}"
 LEAGUE_SUMMARY_PATH = OUTPUTS_DIR / f"league_summary.{OUTPUT_FORMAT}"
 LEAGUE_CURVE_PATH = OUTPUTS_DIR / f"league_curve.{OUTPUT_FORMAT}"
 SENSITIVITY_PATH = OUTPUTS_DIR / f"sensitivity.{OUTPUT_FORMAT}"
+QB_SUMMARY_PATH = OUTPUTS_DIR / f"qb_summary.{OUTPUT_FORMAT}"
+QB_PRIOR_PATH = OUTPUTS_DIR / "qb_prior.json"  # fitted priors and league split values
 PLOTS_DIR = OUTPUTS_DIR / "plots"
 
 # dropBackType groups. Designed plays are left out of labels and analysis

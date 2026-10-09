@@ -47,12 +47,12 @@ Rules: only `Dataset/`, QBs only, no invented numbers. Every threshold is set fr
 - [x] Survivorship check: how many sacks get labelled chaos under the tracking rules vs under `dropBackType`.
 
 ## 5. Per-QB chaos value
-- [ ] Per QB: pressured plays, chaos plays, scripted plays, chaos rate under pressure.
-- [ ] Raw chaos value = chaos success rate minus scripted success rate.
-- [ ] Empirical Bayes shrinkage toward the league average (beta-binomial on each rate, or shrink the difference). Document the method and the fitted prior.
-- [ ] Set a minimum play count to appear in the visualiser. Show counts everywhere.
-- [ ] Quadrant assignment, split at the league chaos rate and zero chaos value (or the league average). Describe each corner in plain words.
-- [ ] Save `outputs/qb_summary`.
+- [x] Per QB: pressured plays, chaos plays, scripted plays, chaos rate under pressure.
+- [x] Raw chaos value = chaos success rate minus scripted success rate.
+- [x] Empirical Bayes shrinkage toward the league average (beta-binomial on each rate, or shrink the difference). Document the method and the fitted prior.
+- [x] Set a minimum play count to appear in the visualiser. Show counts everywhere.
+- [x] Quadrant assignment, split at the league chaos rate and zero chaos value (or the league average). Describe each corner in plain words.
+- [x] Save `outputs/qb_summary`.
 
 ## 6. Export for the visualiser (handoff)
 - [ ] Agree on the JSON schema with the visualiser side before building it.
