@@ -3,296 +3,487 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chaos Replay Viewer</title>
+<title>Script vs Chaos</title>
 <link rel="icon" href="data:,">
 <style>
 :root {
-  --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #6b7385; --border: #e2e5eb;
-  --accent: #2563eb; --chaos: #d9480f; --off: #2563eb; --def: #e03131; --ball: #8b5a2b;
-  --field: #2f7d46; --field-alt: #2b7441; --line: rgba(255,255,255,.75); --box: rgba(255,214,10,.18);
+  color-scheme: light;
+  --bg: #f4f4f2; --panel: #fcfcfb; --text: #0b0b0b; --muted: #52514e; --faint: #8a897f;
+  --border: #e4e3df; --grid: #e4e3df; --axis: #c3c2b7;
+  --scripted: #2a78d6; --chaos: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --dot: #52514e; --sel: #0b0b0b;
+  --off: #2a78d6; --def: #d6336c; --ball: #8b5a2b; --qb: #ffd60a;
+  --field: #2f7d46; --field-alt: #2b7441; --line: rgba(255,255,255,.75); --box: rgba(255,214,10,.16);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1218; --panel: #171b23; --text: #e6e8ee; --muted: #8b93a5; --border: #262c38;
-    --accent: #5b8cff; --off: #5b8cff; --def: #ff6b6b;
+    color-scheme: dark;
+    --bg: #111110; --panel: #1a1a19; --text: #ffffff; --muted: #c3c2b7; --faint: #8a897f;
+    --border: #2c2c2a; --grid: #2c2c2a; --axis: #52514e;
+    --scripted: #3987e5; --chaos: #d95926; --s3: #199e70; --s4: #c98500;
+    --dot: #c3c2b7; --sel: #ffffff; --off: #3987e5; --def: #e8578d;
     --field: #1f5a33; --field-alt: #1c5330;
   }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --panel: #1a1a19; --text: #ffffff; --muted: #c3c2b7; --faint: #8a897f;
+  --border: #2c2c2a; --grid: #2c2c2a; --axis: #52514e;
+  --scripted: #3987e5; --chaos: #d95926; --s3: #199e70; --s4: #c98500;
+  --dot: #c3c2b7; --sel: #ffffff; --off: #3987e5; --def: #e8578d;
+  --field: #1f5a33; --field-alt: #1c5330;
+}
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; }
-.app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
-aside { border-right: 1px solid var(--border); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-aside header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
-aside h1 { font-size: 16px; margin: 0 0 4px; }
-aside .rule { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
-input[type=search] { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-#list { overflow-y: auto; flex: 1; }
-.item { padding: 9px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
-.item:hover { background: var(--bg); }
-.item.sel { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.item .t { font-weight: 600; }
-.item .s { color: var(--muted); font-size: 12px; }
-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 16px; gap: 12px; overflow-y: auto; }
-.title { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.title h2 { margin: 0; font-size: 16px; }
-.title .desc { color: var(--muted); font-size: 12px; max-width: 900px; }
-.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); align-items: center; }
-.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+.page { max-width: 1400px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; }
+header .q { margin: 2px 0 6px; font-size: 15px; }
+header .scope { color: var(--muted); font-size: 12px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h2 { margin: 0 0 2px; font-size: 15px; }
+.card .sub { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+.row { display: grid; gap: 16px; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.num { font-variant-numeric: tabular-nums; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.n { color: var(--faint); font-size: 11px; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+svg text { fill: var(--muted); font-size: 11px; }
+svg .corner { fill: var(--faint); font-size: 11px; }
+svg .grid { stroke: var(--grid); }
+svg .axis { stroke: var(--axis); }
+svg .split { stroke: var(--faint); stroke-dasharray: 4 4; }
+.qdot { fill: var(--dot); stroke: var(--panel); stroke-width: 2; cursor: pointer; }
+.qdot.sel { fill: var(--chaos); stroke: var(--sel); }
+.qlabel { fill: var(--text) !important; font-weight: 600; pointer-events: none; }
+.tip { position: fixed; pointer-events: none; background: var(--panel); color: var(--text); border: 1px solid var(--border);
+       border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.15); display: none; z-index: 10; max-width: 280px; }
+.tip b { font-weight: 600; }
+.qbhead { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.qbhead select { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.quad { margin: 8px 0 12px; padding: 8px 10px; border-left: 3px solid var(--chaos); background: var(--bg); border-radius: 4px; font-size: 13px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.stat { background: var(--bg); border-radius: 6px; padding: 8px 10px; }
+.stat .v { font-size: 20px; font-weight: 600; }
+.stat .l { font-size: 11px; color: var(--muted); }
+.replay { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; }
+.plist { display: flex; flex-direction: column; min-height: 0; max-height: 640px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.tabs button, .controls button, .controls select, .viewtoggle button {
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+.tabs button.on, .viewtoggle button.on { background: var(--text); color: var(--panel); border-color: var(--text); }
+#plays { overflow-y: auto; flex: 1; border: 1px solid var(--border); border-radius: 6px; }
+.pitem { padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 12px; }
+.pitem:hover { background: var(--bg); }
+.pitem.sel { background: color-mix(in srgb, var(--chaos) 14%, transparent); }
+.pitem .t { font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; gap: 6px; }
+.pitem .s { color: var(--muted); }
+.tag { font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.tag.chaos { background: var(--chaos); } .tag.scripted { background: var(--scripted); }
+.ptitle { font-weight: 600; } .pdesc { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 #wrap { position: relative; width: 100%; aspect-ratio: 120 / 53.3; background: var(--field); border-radius: 8px; overflow: hidden; }
 #wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.controls { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
-.controls button, .controls select { border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; padding: 5px 10px; cursor: pointer; font: inherit; }
+.controls { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .track { position: relative; flex: 1; }
 .track input { width: 100%; margin: 0; }
-#chaosTick { position: absolute; top: -6px; width: 2px; height: 8px; background: var(--chaos); pointer-events: none; }
-#frameLbl { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 150px; text-align: right; }
-.events { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
-.events h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.tick { position: absolute; top: -8px; width: 2px; height: 9px; pointer-events: none; }
+#frameLbl { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 140px; text-align: right; }
+.events { margin-top: 10px; }
 .events ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.events li { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-variant-numeric: tabular-nums; }
+.events li { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--faint); cursor: pointer; font-variant-numeric: tabular-nums; }
 .events li.past { color: var(--text); }
-.events li.now { background: var(--accent); border-color: var(--accent); color: #fff; }
-.events li.chaos { border-color: var(--chaos); }
-.events li.chaos.now { background: var(--chaos); }
-.empty { color: var(--muted); padding: 40px; text-align: center; }
-@media (max-width: 800px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; height: auto; }
-  aside { border-right: 0; border-bottom: 1px solid var(--border); }
-  main { padding: 12px 16px; }
+.events li.now { background: var(--text); border-color: var(--text); color: var(--panel); }
+.events li.derived { border-style: dashed; }
+.events li.d-pressure.now { background: var(--def); border-color: var(--def); color: #fff; }
+.events li.d-off.now { background: var(--chaos); border-color: var(--chaos); color: #fff; }
+.viewtoggle { display: flex; gap: 4px; }
+.err { color: var(--chaos); }
+@media (max-width: 980px) {
+  .row, .replay { grid-template-columns: 1fr; }
+  .plist { max-height: 300px; }
 }
 </style>
 </head>
 <body>
-<div class="app">
-  <aside>
-    <header>
-      <h1>Chaos events</h1>
-      <p class="rule" id="rule">Loading…</p>
-      <input type="search" id="filter" placeholder="Filter by QB, team, week…">
-    </header>
-    <div id="list"></div>
-  </aside>
-  <main>
-    <div class="title">
+<div class="page">
+  <header>
+    <h1>Script vs Chaos</h1>
+    <p class="q">When a QB's pass play breaks down under pressure, does leaving the script help or hurt?</p>
+    <div class="scope" id="scope">Loading…</div>
+  </header>
+
+  <section class="card" id="leagueCard">
+    <h2>League: pressured plays, scripted vs chaos</h2>
+    <p class="sub">Pressured = PFF pressure and a rusher within the pressure distance. Chaos includes plays that went off script before the pressure frame.</p>
+    <div id="leagueTable"></div>
+  </section>
+
+  <div class="row">
+    <section class="card">
+      <h2>QB quadrant</h2>
+      <p class="sub" id="quadSub"></p>
+      <div id="quad"></div>
+    </section>
+    <section class="card" id="qbCard">
+      <div class="qbhead"><h2 id="qbName">QB</h2><select id="qbSelect" aria-label="Select QB"></select></div>
+      <div class="quad" id="qbQuad"></div>
+      <div class="stats" id="qbStats"></div>
+      <div id="qbTable"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Play replay</h2>
+    <p class="sub">Pressured plays of the selected QB. Coordinates are normalized so the offense moves right. The QB trail turns from blue to orange at the off-script frame.</p>
+    <div class="replay">
+      <div class="plist">
+        <div class="tabs" id="tabs">
+          <button data-f="all" class="on">All</button><button data-f="chaos">Chaos</button><button data-f="scripted">Scripted</button>
+        </div>
+        <div id="plays"></div>
+        <div class="n" id="subsetNote" style="margin-top:6px"></div>
+      </div>
       <div>
-        <h2 id="playTitle">Select an event</h2>
-        <div class="desc" id="playDesc"></div>
+        <div class="ptitle" id="pTitle"></div>
+        <div class="pdesc" id="pDesc"></div>
+        <div id="wrap"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
+        <div class="legend" style="margin-top:8px">
+          <span><span class="key" style="background:var(--off)"></span>Offense</span>
+          <span><span class="key" style="background:var(--def)"></span>Defense</span>
+          <span><span class="key" style="background:var(--qb)"></span>QB (orange once off script)</span>
+          <span><span class="key" style="background:var(--box);outline:1px solid var(--border)"></span>Tackle box</span>
+          <span>◆ pressure point</span><span>✕ drop spot</span><span>┊ line of scrimmage</span>
+        </div>
+        <div class="controls">
+          <button id="playBtn" title="Space">Play</button>
+          <select id="speed" title="Playback frames per second"><option value="5">5 fps</option><option value="10" selected>10 fps</option><option value="20">20 fps</option></select>
+          <div class="track"><input type="range" id="slider" min="0" max="0" value="0" aria-label="Frame"><div id="ticks"></div></div>
+          <span id="frameLbl"></span>
+        </div>
+        <div class="events"><ol id="events"></ol></div>
       </div>
-      <div class="legend">
-        <span><span class="dot" style="background:var(--off)"></span>Offense</span>
-        <span><span class="dot" style="background:var(--def)"></span>Defense</span>
-        <span><span class="dot" style="background:var(--ball)"></span>Ball</span>
-        <span><span class="dot" style="background:var(--box);outline:1px solid var(--border)"></span>Tackle box</span>
-        <span><span class="dot" style="background:var(--chaos)"></span>QB path after chaos</span>
-      </div>
     </div>
-    <div id="wrap"><canvas id="bg"></canvas><canvas id="fg"></canvas></div>
-    <div class="controls">
-      <button id="play" title="Space">Play</button>
-      <button id="toChaos" title="Jump to chaos frame">Chaos</button>
-      <select id="speed" title="Playback frames per second">
-        <option value="5">5 fps</option><option value="10" selected>10 fps</option><option value="20">20 fps</option>
-      </select>
-      <div class="track"><input type="range" id="slider" min="0" max="0" value="0"><div id="chaosTick"></div></div>
-      <span id="frameLbl"></span>
+  </section>
+
+  <section class="card">
+    <div class="qbhead">
+      <h2>Success rate by seconds held after pressure</h2>
+      <div class="viewtoggle" id="curveToggle"><button data-v="no_hold" class="on">Without hold rule</button><button data-v="split">Chaos split by rule</button></div>
     </div>
-    <div class="events">
-      <h3>Events (click to jump)</h3>
-      <ol id="events"></ol>
-    </div>
-  </main>
+    <p class="sub" id="curveSub"></p>
+    <div class="legend" id="curveLegend"></div>
+    <div id="curve"></div>
+  </section>
 </div>
+<div class="tip" id="tip"></div>
 <script id="embedded-data" type="application/json"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const FW = 120, FH = 53.3;
-  let data, play = null, idx = 0, playing = false, last = 0, acc = 0, scale = 1, colors = {};
+  const pct = (v, d = 0) => v == null || Number.isNaN(v) ? '–' : (v * 100).toFixed(d) + '%';
+  const pp = v => v == null ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + ' pts';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const NS = 'http://www.w3.org/2000/svg';
+  let D, qbs, byQb = new Map(), selQb = null, play = null, idx = 0, playing = false, last = 0, acc = 0;
+  let scale = 1, colors = {}, filter = 'all', curveView = 'no_hold';
 
   async function load() {
     const emb = $('embedded-data').textContent.trim();
-    data = emb ? JSON.parse(emb) : await (await fetch('data/replays.json')).json();
-    const m = data.meta;
-    $('rule').textContent = `${m.exported} plays. Rule: ${m.rule}. Built ${m.built}.`;
-    renderList('');
-    if (data.plays.length) select(0);
+    if (emb) return JSON.parse(emb);
+    const get = n => fetch(`../export/${n}.json`).then(r => { if (!r.ok) throw new Error(`${n}.json: ${r.status}`); return r.json(); });
+    const [meta, qb_summary, league] = await Promise.all(['meta', 'qb_summary', 'league'].map(get));
+    return { meta, qb_summary, league, replays: null };
   }
 
-  function label(p) {
-    return { t: `${p.qbName} · ${p.offense} vs ${p.defense}`,
-             s: `Wk ${p.week} · Q${p.quarter} ${p.clock} · ${p.down}&${p.yardsToGo} · ${p.dropBackType} · frame ${p.chaosFrame}` };
+  // ---------- tooltip ----------
+  const tip = $('tip');
+  function showTip(html, e) {
+    tip.innerHTML = html; tip.style.display = 'block';
+    const r = tip.getBoundingClientRect();
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+    if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  const hideTip = () => { tip.style.display = 'none'; };
+  const svgEl = (W, H) => {
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('width', W); svg.setAttribute('height', H);
+    svg.add = (tag, attrs, text) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text != null) n.textContent = text; svg.appendChild(n); return n; };
+    return svg;
+  };
+
+  // ---------- header + league ----------
+  function renderHeader() {
+    const m = D.meta, t = m.thresholds;
+    $('scope').textContent = `${m.scope} Pressure: rusher within ${t.pressure_distance_yd} yd. Off script: drift > ${t.drift_yd} yd from the drop spot, leaving the tackle box, or holding > ${t.hold_s} s. Built ${m.built}.`;
+    const by = Object.fromEntries(D.league.summary.filter(r => r.group === 'label').map(r => [r.value, r]));
+    const order = ['scripted', 'chaos'].filter(k => by[k]);
+    const cell = (r, k, n) => `${pct(r[k], 1)} <span class="n">${n(r)}</span>`;
+    $('leagueTable').innerHTML = `<table class="num"><thead><tr><th></th>${order.map(k => `<th><span class="key" style="background:var(--${k})"></span>${k}</th>`).join('')}</tr></thead><tbody>
+      <tr><td>Pressured plays</td>${order.map(k => `<td>${by[k].plays}</td>`).join('')}</tr>
+      <tr><td>Success rate</td>${order.map(k => `<td>${cell(by[k], 'success_rate', r => `n=${r.success_plays}`)}</td>`).join('')}</tr>
+      <tr><td>Sack rate</td>${order.map(k => `<td>${cell(by[k], 'sack_rate', r => `${r.sacks} sacks`)}</td>`).join('')}</tr>
+      <tr><td>INT rate</td>${order.map(k => `<td>${cell(by[k], 'int_rate', r => `${r.ints} INTs`)}</td>`).join('')}</tr>
+    </tbody></table>`;
   }
 
-  function renderList(q) {
-    q = q.toLowerCase();
+  // ---------- quadrant ----------
+  function renderQuadrant() {
+    const S = D.qb_summary, sp = S.splits;
+    $('quadSub').textContent = `${qbs.length} QBs with at least ${S.min_plays} pressured chaos plays and ${S.min_plays} scripted. x = share of pressured plays that went off script; y = chaos value (chaos success minus scripted success, shrunk toward the league). Dashed lines = league values (${pct(sp.chaos_rate, 1)}, ${pp(sp.chaos_value)}).`;
+    const el = $('quad'); el.innerHTML = '';
+    const W = el.clientWidth || 600, H = Math.max(340, Math.min(480, W * 0.68)), m = { l: 52, r: 16, t: 14, b: 40 };
+    const xs = qbs.map(q => q.chaos_rate).concat(sp.chaos_rate), ys = qbs.map(q => q.shrunk_chaos_value).concat(sp.chaos_value);
+    const pad = (a, b, k) => { const d = (b - a) * k || 0.01; return [a - d, b + d]; };
+    const [x0, x1] = pad(Math.min(...xs), Math.max(...xs), 0.06), [y0, y1] = pad(Math.min(...ys), Math.max(...ys), 0.22);
+    const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+    const svg = svgEl(W, H), add = svg.add;
+    const ticks = (a, b, n) => { const s = (b - a) / n, p = Math.pow(10, Math.floor(Math.log10(s))), st = [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= s); const out = []; for (let v = Math.ceil(a / st) * st; v <= b + 1e-9; v += st) out.push(+v.toFixed(6)); return out; };
+    for (const v of ticks(y0, y1, 5)) { add('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }); add('text', { x: m.l - 6, y: Y(v) + 4, 'text-anchor': 'end' }, pp(v).replace(' pts', '')); }
+    for (const v of ticks(x0, x1, 6)) add('text', { x: X(v), y: H - m.b + 16, 'text-anchor': 'middle' }, pct(v));
+    add('line', { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: 'axis' });
+    add('text', { x: (m.l + W - m.r) / 2, y: H - 6, 'text-anchor': 'middle' }, 'Chaos rate under pressure →');
+    add('text', { x: 0, y: 0, 'text-anchor': 'middle', transform: `translate(13 ${(m.t + H - m.b) / 2}) rotate(-90)` }, 'Chaos value (pts, shrunk) →');
+    add('line', { x1: X(sp.chaos_rate), x2: X(sp.chaos_rate), y1: m.t, y2: H - m.b, class: 'split' });
+    add('line', { x1: m.l, x2: W - m.r, y1: Y(sp.chaos_value), y2: Y(sp.chaos_value), class: 'split' });
+    // corner descriptions (text from src/qb_summary.QUADRANTS)
+    const maxCh = Math.max(24, Math.floor((W - m.l - m.r) / 2 / 6.2));
+    for (const c of S.quadrants) {
+      const lines = []; let cur = '';
+      for (const w of c.text.split(' ')) { if ((cur + ' ' + w).trim().length > maxCh) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }
+      lines.push(cur);
+      const tx = c.often ? W - m.r - 4 : m.l + 4, anchor = c.often ? 'end' : 'start';
+      lines.forEach((ln, i) => add('text', { x: tx, y: c.better ? m.t + 12 + i * 13 : H - m.b - 8 - (lines.length - 1 - i) * 13, 'text-anchor': anchor, class: 'corner' }, ln));
+    }
+    for (const q of qbs) {
+      const sel = q.qbId === selQb?.qbId;
+      const c = add('circle', { cx: X(q.chaos_rate), cy: Y(q.shrunk_chaos_value), r: sel ? 7 : 5, class: 'qdot' + (sel ? ' sel' : '') });
+      c.addEventListener('mousemove', e => showTip(`<b>${esc(q.name)}</b> (${esc(q.team)})<br>Chaos rate ${pct(q.chaos_rate, 1)} · ${q.chaos_plays} of ${q.pressured_plays} pressured plays<br>Chaos value ${pp(q.shrunk_chaos_value)} shrunk, ${pp(q.raw_chaos_value)} raw`, e));
+      c.addEventListener('mouseleave', hideTip);
+      c.addEventListener('click', () => selectQb(q.qbId).catch(showErr));
+    }
+    if (selQb) {
+      const lx = X(selQb.chaos_rate), right = lx > W - 140;
+      add('text', { x: lx + (right ? -10 : 10), y: Y(selQb.shrunk_chaos_value) + 4, 'text-anchor': right ? 'end' : 'start', class: 'qlabel' }, selQb.name);
+    }
+    el.appendChild(svg);
+  }
+
+  // ---------- QB card ----------
+  function renderQbCard() {
+    const q = selQb;
+    $('qbName').textContent = `${q.name} · ${q.team}`;
+    $('qbSelect').value = q.qbId;
+    $('qbQuad').textContent = q.quadrant;
+    $('qbStats').innerHTML = [
+      [pct(q.chaos_rate, 1), `Chaos rate (${q.chaos_plays} of ${q.pressured_plays} pressured)`],
+      [pp(q.shrunk_chaos_value), 'Chaos value, shrunk'],
+      [pp(q.raw_chaos_value), 'Chaos value, raw'],
+    ].map(([v, l]) => `<div class="stat"><div class="v num">${v}</div><div class="l">${l}</div></div>`).join('');
+    const r = (k, n) => `${pct(q[k], 1)} <span class="n">${n}</span>`;
+    $('qbTable').innerHTML = `<table class="num"><thead><tr><th></th><th><span class="key" style="background:var(--scripted)"></span>Scripted</th><th><span class="key" style="background:var(--chaos)"></span>Chaos</th></tr></thead><tbody>
+      <tr><td>Pressured plays</td><td>${q.scripted_plays}</td><td>${q.chaos_plays}</td></tr>
+      <tr><td>Success rate, raw</td><td>${r('scripted_success_rate', `${q.scripted_successes}/${q.scripted_success_plays}`)}</td><td>${r('chaos_success_rate', `${q.chaos_successes}/${q.chaos_success_plays}`)}</td></tr>
+      <tr><td>Success rate, shrunk</td><td>${pct(q.shrunk_scripted_success, 1)}</td><td>${pct(q.shrunk_chaos_success, 1)}</td></tr>
+      <tr><td>Sack rate</td><td>${r('scripted_sack_rate', `${q.scripted_sacks} sacks`)}</td><td>${r('chaos_sack_rate', `${q.chaos_sacks} sacks`)}</td></tr>
+      <tr><td>INT rate</td><td>${r('scripted_int_rate', `${q.scripted_ints} INTs`)}</td><td>${r('chaos_int_rate', `${q.chaos_ints} INTs`)}</td></tr>
+    </tbody></table>`;
+  }
+
+  // Replays: embedded subset (standalone) or one file per QB, fetched on first use.
+  async function replaysFor(id) {
+    if (!byQb.has(id)) {
+      const list = D.replays ? (D.replays[id] || [])
+        : await fetch(`../export/replays/${id}.json`).then(r => { if (!r.ok) throw new Error(`replays/${id}.json: ${r.status}`); return r.json(); });
+      byQb.set(id, list);
+    }
+    return byQb.get(id);
+  }
+
+  async function selectQb(id) {
+    selQb = qbs.find(q => q.qbId === +id);
+    renderQuadrant(); renderQbCard();
+    $('plays').innerHTML = '<div class="pitem s">Loading plays…</div>';
+    const want = selQb.qbId, list = await replaysFor(want);
+    if (selQb.qbId !== want) return;  // a newer selection won
+    renderPlayList();
+    const first = list.find(p => p.label === 'chaos') || list[0];
+    if (first) selectPlay(first); else clearPlay();
+  }
+
+  // ---------- play list ----------
+  function outcome(p) {
+    if (p.sack) return 'sack'; if (p.interception) return 'INT';
+    const y = p.yards == null ? '' : `${p.yards} yd`;
+    return p.success == null ? y : `${y} · ${p.success ? 'success' : 'no success'}`;
+  }
+  function renderPlayList() {
+    const list = (byQb.get(selQb.qbId) || []).filter(p => filter === 'all' || p.label === filter);
+    const sub = D.meta.embedded_subset;
+    $('subsetNote').textContent = sub ? `Standalone file: first ${sub} chaos and ${sub} scripted plays of each QB (of ${selQb.pressured_plays} pressured). Serve the repo for all plays.` : `${selQb.pressured_plays} pressured plays.`;
     const frag = document.createDocumentFragment();
-    data.plays.forEach((p, i) => {
-      if (p.chaosFrame == null) return;  // chaos plays only
-      const l = label(p);
-      if (q && !(l.t + ' ' + l.s + ' ' + p.gameId + ' ' + p.playId).toLowerCase().includes(q)) return;
+    for (const p of list) {
       const d = document.createElement('div');
-      d.className = 'item' + (play === p ? ' sel' : '');
-      d.dataset.i = i;
-      d.innerHTML = `<div class="t"></div><div class="s"></div>`;
-      d.firstChild.textContent = l.t; d.lastChild.textContent = l.s;
+      d.className = 'pitem' + (p === play ? ' sel' : '');
+      d.dataset.k = `${p.gameId}-${p.playId}`;
+      const rule = p.label === 'chaos' ? `${p.offScriptRule}${p.chaosBeforePressure ? ', before pressure' : ''}` : '';
+      d.innerHTML = `<div class="t"><span>Wk ${p.week} · ${esc(p.offense)} vs ${esc(p.defense)} · Q${p.quarter} ${esc(p.clock)}</span><span class="tag ${p.label}">${p.label}</span></div>
+        <div class="s">${p.down}&amp;${p.yardsToGo} · ${esc(outcome(p))}${rule ? ' · ' + esc(rule) : ''}</div>`;
+      d.addEventListener('click', () => selectPlay(p));
       frag.appendChild(d);
-    });
-    $('list').replaceChildren(frag);
+    }
+    $('plays').replaceChildren(frag);
   }
 
-  function select(i) {
-    play = data.plays[i];
-    document.querySelectorAll('.item.sel').forEach(e => e.classList.remove('sel'));
-    const el = document.querySelector(`.item[data-i="${i}"]`);
-    if (el) el.classList.add('sel');
-    const l = label(play);
-    $('playTitle').textContent = `${l.t} — game ${play.gameId}, play ${play.playId}`;
-    $('playDesc').textContent = play.description;
-    const s = $('slider');
-    s.max = play.frames.length - 1;
-    idx = play.chaosFrame - play.firstFrame;
-    s.value = idx;
-    $('chaosTick').style.left = `calc(${(idx / Math.max(1, s.max)) * 100}% - 1px)`;
+  // ---------- replay ----------
+  const FW = 120, FH = 53.3;
+  const X = x => x * scale, Y = y => (FH - y) * scale;
+  const F = p => p.firstFrame;
+
+  function clearPlay() { play = null; $('pTitle').textContent = 'No pressured plays'; $('pDesc').textContent = ''; $('events').replaceChildren(); drawBg(); drawFg(); }
+
+  function selectPlay(p) {
+    play = p;
+    document.querySelectorAll('.pitem.sel').forEach(e => e.classList.remove('sel'));
+    document.querySelector(`.pitem[data-k="${p.gameId}-${p.playId}"]`)?.classList.add('sel');
+    const rule = p.label === 'chaos' ? ` · off script by ${p.rulesFired?.split('+').join(', ')} (first: ${p.offScriptRule})` : '';
+    $('pTitle').textContent = `Game ${p.gameId}, play ${p.playId} · ${p.down}&${p.yardsToGo} · ${outcome(p)}${rule}`;
+    $('pDesc').textContent = p.description;
+    p._qi = p.entities.findIndex(e => e.id === p.qbId);
+    const s = $('slider'); s.max = p.frames.length - 1;
+    const tickAt = (f, color, label) => {
+      if (f == null) return '';
+      const i = f - F(p); if (i < 0 || i >= p.frames.length) return '';
+      return `<div class="tick" title="${label}" style="background:${color};left:calc(${i / Math.max(1, s.max) * 100}% - 1px)"></div>`;
+    };
+    $('ticks').innerHTML = tickAt(p.pressureFrame, 'var(--def)', 'pressure') + tickAt(p.offScriptFrame, 'var(--chaos)', 'off script');
     setPlaying(false);
     renderEvents();
-    drawBg(); drawFg();
+    drawBg();
+    setFrame((p.offScriptFrame ?? p.pressureFrame) - F(p));
   }
 
   function resize() {
-    const w = $('wrap'), dpr = window.devicePixelRatio || 1;
-    const W = w.clientWidth, H = w.clientHeight;
+    const w = $('wrap'), dpr = window.devicePixelRatio || 1, W = w.clientWidth, H = w.clientHeight;
     for (const c of [$('bg'), $('fg')]) { c.width = W * dpr; c.height = H * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); }
     scale = W / FW;
-    colors = { off: css('--off'), def: css('--def'), ball: css('--ball'), field: css('--field'), alt: css('--field-alt'),
-               line: css('--line'), box: css('--box'), chaos: css('--chaos') };
-    if (play) { drawBg(); drawFg(); }
+    colors = Object.fromEntries(['off', 'def', 'ball', 'field', 'field-alt', 'line', 'box', 'chaos', 'scripted', 'qb'].map(k => [k, css('--' + k)]));
+    drawBg(); drawFg();
   }
-
-  const X = x => x * scale, Y = y => (FH - y) * scale;
 
   function drawBg() {
     const g = $('bg').getContext('2d');
     g.clearRect(0, 0, X(FW), X(FH));
-    for (let x = 10; x < 110; x += 10) { g.fillStyle = (x / 10) % 2 ? colors.field : colors.alt; g.fillRect(X(x), 0, X(10), X(FH)); }
-    g.fillStyle = colors.alt; g.fillRect(0, 0, X(10), X(FH)); g.fillRect(X(110), 0, X(10), X(FH));
+    for (let x = 10; x < 110; x += 10) { g.fillStyle = (x / 10) % 2 ? colors.field : colors['field-alt']; g.fillRect(X(x), 0, X(10), X(FH)); }
+    g.fillStyle = colors['field-alt']; g.fillRect(0, 0, X(10), X(FH)); g.fillRect(X(110), 0, X(10), X(FH));
     g.strokeStyle = colors.line; g.lineWidth = 1;
-    for (let x = 10; x <= 110; x += 5) { g.globalAlpha = x % 10 ? .45 : .9; g.beginPath(); g.moveTo(X(x), 0); g.lineTo(X(x), X(FH)); g.stroke(); }
-    g.globalAlpha = .6;
+    for (let x = 10; x <= 110; x += 5) { g.globalAlpha = x % 10 ? .4 : .85; g.beginPath(); g.moveTo(X(x), 0); g.lineTo(X(x), X(FH)); g.stroke(); }
+    g.globalAlpha = .55;
     for (let x = 11; x < 110; x++) for (const y of [0.5, 23.37, 29.97, FH - 0.5]) { g.beginPath(); g.moveTo(X(x), Y(y) - 2); g.lineTo(X(x), Y(y) + 2); g.stroke(); }
-    g.globalAlpha = .8; g.fillStyle = colors.line; g.font = `600 ${Math.max(10, scale * 1.8)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.globalAlpha = .75; g.fillStyle = colors.line; g.font = `600 ${Math.max(10, scale * 1.8)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (let x = 20; x <= 100; x += 10) { const n = 50 - Math.abs(x - 60); g.fillText(String(n), X(x), Y(12)); g.fillText(String(n), X(x), Y(FH - 12)); }
     g.globalAlpha = 1;
-    if (play) {
-      const [lo, hi] = play.box;
-      g.fillStyle = colors.box; g.fillRect(0, Y(hi), X(FW), Y(lo) - Y(hi));
-    }
+    if (!play) return;
+    if (play.box) { const [lo, hi] = play.box; g.fillStyle = colors.box; g.fillRect(0, Y(hi), X(FW), Y(lo) - Y(hi)); }
+    g.strokeStyle = colors.scripted; g.lineWidth = 2; g.setLineDash([6, 5]);
+    g.beginPath(); g.moveTo(X(play.losX), 0); g.lineTo(X(play.losX), X(FH)); g.stroke(); g.setLineDash([]);
+    const [dx, dy] = play.drop, k = Math.max(4, scale * .6);
+    g.strokeStyle = '#fff'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(X(dx) - k, Y(dy) - k); g.lineTo(X(dx) + k, Y(dy) + k); g.moveTo(X(dx) + k, Y(dy) - k); g.lineTo(X(dx) - k, Y(dy) + k); g.stroke();
   }
 
   function drawFg() {
     const g = $('fg').getContext('2d');
     g.clearRect(0, 0, X(FW), X(FH));
     if (!play) return;
-    const fr = play.frames[idx], r = Math.max(7, scale * 1.05);
-    // QB trail up to current frame
-    const qi = play.entities.findIndex(e => e.id === play.qbId);
-    g.lineWidth = 2; g.lineCap = 'round';
-    for (let k = 1; k <= idx; k++) {
-      const a = play.frames[k - 1][qi], b = play.frames[k][qi];
-      if (!a || !b) continue;
-      g.strokeStyle = (k + play.firstFrame >= play.chaosFrame) ? colors.chaos : colors.off;
-      g.globalAlpha = .7;
+    const p = play, fr = p.frames[idx], r = Math.max(7, scale * 1.05), qi = p._qi, f = idx + F(p);
+    const off = p.offScriptFrame != null && f >= p.offScriptFrame;
+    // QB trail from the snap
+    g.lineWidth = 2.5; g.lineCap = 'round';
+    for (let k = Math.max(1, p.snapFrame - F(p) + 1); k <= idx; k++) {
+      const a = p.frames[k - 1][qi], b = p.frames[k][qi]; if (!a || !b) continue;
+      g.strokeStyle = p.offScriptFrame != null && k + F(p) >= p.offScriptFrame ? colors.chaos : colors.scripted;
       g.beginPath(); g.moveTo(X(a[0] / 10), Y(a[1] / 10)); g.lineTo(X(b[0] / 10), Y(b[1] / 10)); g.stroke();
     }
-    g.globalAlpha = 1;
+    // pressure marker at the QB's spot on the pressure frame
+    const pi = p.pressureFrame - F(p);
+    if (idx >= pi && p.frames[pi]?.[qi]) {
+      const q = p.frames[pi][qi], cx = X(q[0] / 10), cy = Y(q[1] / 10), s = r * .9;
+      g.fillStyle = colors.def; g.strokeStyle = '#fff'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(cx, cy - s); g.lineTo(cx + s, cy); g.lineTo(cx, cy + s); g.lineTo(cx - s, cy); g.closePath(); g.fill(); g.stroke();
+    }
+    const rank = e => e.team === 'football' ? 2 : e.id === p.qbId ? 1 : 0;
+    const order = p.entities.map((e, k) => k).sort((a, b) => rank(p.entities[a]) - rank(p.entities[b]));
     g.font = `700 ${Math.round(r * 1.05)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    // draw order: other players (dimmed), then QB, then ball on top
-    const rank = e => e.team === 'football' ? 2 : e.id === play.qbId ? 1 : 0;
-    const order = play.entities.map((e, k) => k).sort((a, b) => rank(play.entities[a]) - rank(play.entities[b]));
-    const offScript = idx + play.firstFrame >= play.chaosFrame;
-    order.forEach(k => {
-      const e = play.entities[k], p = fr[k]; if (!p) return;
-      const cx = X(p[0] / 10), cy = Y(p[1] / 10), isQb = e.id === play.qbId;
-      g.globalAlpha = rank(e) === 0 ? .55 : 1;
-      if (isQb) {
-        // halo: yellow while scripted, chaos colour once off-script
-        g.fillStyle = offScript ? colors.chaos : '#ffd60a';
-        g.globalAlpha = .35; g.beginPath(); g.arc(cx, cy, r * 2, 0, Math.PI * 2); g.fill();
-        g.globalAlpha = 1;
-      }
+    for (const k of order) {
+      const e = p.entities[k], pos = fr[k]; if (!pos) continue;
+      const cx = X(pos[0] / 10), cy = Y(pos[1] / 10), isQb = e.id === p.qbId;
       if (e.team === 'football') {
-        g.fillStyle = colors.ball; g.strokeStyle = '#fff'; g.lineWidth = 1;
-        g.beginPath(); g.ellipse(cx, cy, r * .55, r * .38, 0, 0, Math.PI * 2); g.fill(); g.stroke(); return;
+        g.globalAlpha = 1; g.fillStyle = colors.ball; g.strokeStyle = '#fff'; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(cx, cy, r * .55, r * .38, 0, 0, Math.PI * 2); g.fill(); g.stroke(); continue;
       }
-      const col = e.team === play.offense ? colors.off : colors.def;
-      if (p[2] >= 0) {
+      g.globalAlpha = isQb ? 1 : .6;
+      const col = e.team === p.offense ? colors.off : colors.def, hl = off ? colors.chaos : colors.qb;
+      if (isQb) { g.fillStyle = hl; g.globalAlpha = .35; g.beginPath(); g.arc(cx, cy, r * 2, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; }
+      if (pos[2] >= 0) {
         // orientation: 0 deg = +y, clockwise; screen y is flipped
-        const t = p[2] * Math.PI / 180, dx = Math.sin(t), dy = -Math.cos(t), px = -dy, py = dx;
-        g.fillStyle = col;
-        g.beginPath();
-        g.moveTo(cx + dx * r * 2.4, cy + dy * r * 2.4);
-        g.lineTo(cx + px * r * .9, cy + py * r * .9);
-        g.lineTo(cx - px * r * .9, cy - py * r * .9);
+        const t = pos[2] * Math.PI / 180, ux = Math.sin(t), uy = -Math.cos(t);
+        g.fillStyle = col; g.beginPath();
+        g.moveTo(cx + ux * r * 2.4, cy + uy * r * 2.4); g.lineTo(cx - uy * r * .9, cy + ux * r * .9); g.lineTo(cx + uy * r * .9, cy - ux * r * .9);
         g.closePath(); g.fill();
       }
-      g.fillStyle = col; g.strokeStyle = isQb ? (offScript ? colors.chaos : '#ffd60a') : '#fff'; g.lineWidth = isQb ? 3 : 1.5;
+      g.fillStyle = col; g.strokeStyle = isQb ? hl : '#fff'; g.lineWidth = isQb ? 3 : 1.5;
       g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.stroke();
       g.fillStyle = '#fff'; g.fillText(e.jersey ?? '', cx, cy + .5);
       if (isQb) {
-        const tag = play.qbName + (offScript ? ' · off-script' : '');
+        const tag = selQb.name + (off ? ' · off script' : '');
         g.font = `600 ${Math.round(r * 1.1)}px system-ui`;
-        const w = g.measureText(tag).width + 10, ty = cy - r * 2.6;
-        g.fillStyle = offScript ? colors.chaos : 'rgba(0,0,0,.65)';
+        const w = g.measureText(tag).width + 10, ty = cy - r * 2.7;
+        g.fillStyle = off ? colors.chaos : 'rgba(0,0,0,.7)';
         g.beginPath(); g.roundRect(cx - w / 2, ty - r * .8, w, r * 1.6, 4); g.fill();
         g.fillStyle = '#fff'; g.fillText(tag, cx, ty + .5);
         g.font = `700 ${Math.round(r * 1.05)}px system-ui`;
       }
-    });
+    }
     g.globalAlpha = 1;
-    const f = idx + play.firstFrame;
-    $('frameLbl').textContent = `frame ${f} · ${f === play.chaosFrame ? 'chaos' : (f > play.chaosFrame ? '+' : '') + (f - play.chaosFrame)}`;
+    const t = (f - p.snapFrame) / D.meta.frames_per_second;
+    $('frameLbl').textContent = `frame ${f} · ${t >= 0 ? '+' : ''}${t.toFixed(1)} s from snap`;
     updateEventState(f);
   }
 
   function renderEvents() {
-    const evs = play.events.map(([f, n]) => ({ f, n }));
-    evs.push({ f: play.chaosFrame, n: 'chaos: QB leaves tackle box (derived)', chaos: true });
+    const p = play, t = D.meta.thresholds;
+    const evs = p.events.map(([f, n]) => ({ f, n }));
+    evs.push({ f: p.dropFrame, n: 'drop end (derived)', cls: 'derived' });
+    evs.push({ f: p.pressureFrame, n: `pressure: rusher within ${t.pressure_distance_yd} yd (derived)`, cls: 'derived d-pressure' });
+    if (p.offScriptFrame != null) evs.push({ f: p.offScriptFrame, n: `off script: ${p.offScriptRule} (derived)`, cls: 'derived d-off' });
+    evs.push({ f: p.endFrame, n: `end: ${p.endReason} (derived)`, cls: 'derived' });
     evs.sort((a, b) => a.f - b.f);
     const frag = document.createDocumentFragment();
     for (const e of evs) {
       const li = document.createElement('li');
-      li.textContent = `${e.n} · f${e.f}`;
-      li.dataset.f = e.f;
-      if (e.chaos) li.classList.add('chaos');
-      const inClip = e.f >= play.firstFrame && e.f < play.firstFrame + play.frames.length;
-      if (!inClip) { li.title = 'Outside the loaded clip'; li.style.opacity = .5; li.style.cursor = 'default'; }
+      li.textContent = `${e.n} · f${e.f}`; li.dataset.f = e.f;
+      if (e.cls) li.className = e.cls;
       frag.appendChild(li);
     }
     $('events').replaceChildren(frag);
   }
 
   function updateEventState(f) {
-    const lis = $('events').children;
-    let nowF = -1;
+    const lis = $('events').children; let nowF = -Infinity;
     for (const li of lis) if (+li.dataset.f <= f) nowF = Math.max(nowF, +li.dataset.f);
-    for (const li of lis) {
-      const lf = +li.dataset.f;
-      li.classList.toggle('past', lf <= f);
-      li.classList.toggle('now', lf === nowF);
-    }
+    for (const li of lis) { const lf = +li.dataset.f; li.classList.toggle('past', lf <= f); li.classList.toggle('now', lf === nowF); }
   }
 
-  function setFrame(i) {
-    idx = Math.max(0, Math.min(play.frames.length - 1, i));
-    $('slider').value = idx;
-    drawFg();
-  }
-
+  function setFrame(i) { if (!play) return; idx = Math.max(0, Math.min(play.frames.length - 1, i)); $('slider').value = idx; drawFg(); }
   function setPlaying(v) {
-    playing = v; $('play').textContent = v ? 'Pause' : 'Play';
-    if (v) { if (idx >= play.frames.length - 1) setFrame(0); last = performance.now(); acc = 0; requestAnimationFrame(tick); }
+    playing = v && !!play; $('playBtn').textContent = playing ? 'Pause' : 'Play';
+    if (playing) { if (idx >= play.frames.length - 1) setFrame(0); last = performance.now(); acc = 0; requestAnimationFrame(tick); }
   }
-
   function tick(now) {
     if (!playing) return;
     acc += now - last; last = now;
@@ -305,26 +496,67 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; paddi
     requestAnimationFrame(tick);
   }
 
-  $('list').addEventListener('click', e => { const it = e.target.closest('.item'); if (it) select(+it.dataset.i); });
-  $('filter').addEventListener('input', e => renderList(e.target.value));
+  // ---------- league curve ----------
+  function renderCurve() {
+    const rows = D.league.curve.filter(r => r.view === curveView);
+    const names = [...new Set(rows.map(r => r.line))].sort((a, b) => (a !== 'scripted') - (b !== 'scripted') || a.localeCompare(b));
+    const pal = ['--scripted', '--chaos', '--s3', '--s4'];
+    const color = n => `var(${pal[names.indexOf(n)] || '--faint'})`;
+    $('curveSub').textContent = curveView === 'no_hold'
+      ? 'Labels from the drift and box rules only (hold-only plays count as scripted), so scripted plays can reach the long bins. Hover a point for its play count.'
+      : 'Scripted, plus one chaos line per first rule broken. Hover a point for its play count.';
+    $('curveLegend').innerHTML = names.map(n => `<span><span class="key" style="background:${color(n)}"></span>${esc(n)}</span>`).join('');
+    const bins = [...new Map(rows.map(r => [r.bin_start, r.bin_label])).entries()].sort((a, b) => a[0] - b[0]);
+    const el = $('curve'); el.innerHTML = '';
+    const W = el.clientWidth || 800, H = 300, m = { l: 44, r: 16, t: 12, b: 34 };
+    const X = b => m.l + (bins.length < 2 ? 0 : bins.findIndex(x => x[0] === b) / (bins.length - 1)) * (W - m.l - m.r);
+    const Y = v => H - m.b - v * (H - m.t - m.b);
+    const svg = svgEl(W, H), add = svg.add;
+    for (let v = 0; v <= 1.0001; v += 0.25) { add('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }); add('text', { x: m.l - 6, y: Y(v) + 4, 'text-anchor': 'end' }, pct(v)); }
+    add('line', { x1: m.l, x2: W - m.r, y1: Y(0), y2: Y(0), class: 'axis' });
+    for (const [b, l] of bins) add('text', { x: X(b), y: H - m.b + 16, 'text-anchor': 'middle' }, l);
+    add('text', { x: (m.l + W - m.r) / 2, y: H - 4, 'text-anchor': 'middle' }, 'Seconds held after pressure');
+    for (const n of names) {
+      const pts = rows.filter(r => r.line === n && r.success_rate != null).sort((a, b) => a.bin_start - b.bin_start);
+      add('path', { d: pts.map((r, i) => `${i ? 'L' : 'M'}${X(r.bin_start)},${Y(r.success_rate)}`).join(''), fill: 'none', stroke: color(n), 'stroke-width': 2 });
+      for (const r of pts) {
+        add('circle', { cx: X(r.bin_start), cy: Y(r.success_rate), r: 4, fill: color(n), stroke: 'var(--panel)', 'stroke-width': 2 });
+        const hit = add('circle', { cx: X(r.bin_start), cy: Y(r.success_rate), r: 10, fill: 'transparent' });
+        hit.addEventListener('mousemove', e => showTip(`<b>${esc(n)}</b> · ${esc(r.bin_label)} s<br>Success ${pct(r.success_rate, 1)} (n=${r.success_plays})<br>${r.plays} plays · sack ${pct(r.sack_rate, 1)} · INT ${pct(r.int_rate, 1)}`, e));
+        hit.addEventListener('mouseleave', hideTip);
+      }
+    }
+    el.appendChild(svg);
+  }
+
+  // ---------- wiring ----------
+  $('qbSelect').addEventListener('change', e => selectQb(e.target.value).catch(showErr));
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; filter = b.dataset.f; [...$('tabs').children].forEach(x => x.classList.toggle('on', x === b)); renderPlayList(); });
+  $('curveToggle').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; curveView = b.dataset.v; [...$('curveToggle').children].forEach(x => x.classList.toggle('on', x === b)); renderCurve(); });
   $('slider').addEventListener('input', e => { setPlaying(false); setFrame(+e.target.value); });
-  $('play').addEventListener('click', () => play && setPlaying(!playing));
-  $('toChaos').addEventListener('click', () => { if (play) { setPlaying(false); setFrame(play.chaosFrame - play.firstFrame); } });
-  $('events').addEventListener('click', e => {
-    const li = e.target.closest('li'); if (!li || !play) return;
-    const i = +li.dataset.f - play.firstFrame;
-    if (i >= 0 && i < play.frames.length) { setPlaying(false); setFrame(i); }
-  });
+  $('playBtn').addEventListener('click', () => setPlaying(!playing));
+  $('events').addEventListener('click', e => { const li = e.target.closest('li'); if (!li || !play) return; setPlaying(false); setFrame(+li.dataset.f - F(play)); });
   document.addEventListener('keydown', e => {
-    if (!play || e.target.tagName === 'INPUT' && e.target.type === 'search') return;
+    if (!play || (['INPUT', 'SELECT'].includes(e.target.tagName) && e.target.type !== 'range')) return;
     if (e.key === 'ArrowRight') { setPlaying(false); setFrame(idx + 1); e.preventDefault(); }
     else if (e.key === 'ArrowLeft') { setPlaying(false); setFrame(idx - 1); e.preventDefault(); }
     else if (e.key === ' ') { setPlaying(!playing); e.preventDefault(); }
   });
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (D) { renderQuadrant(); renderCurve(); } }, 120); });
   new ResizeObserver(resize).observe($('wrap'));
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resize);
-  resize();
-  load().catch(err => { $('rule').textContent = 'Failed to load data: ' + err.message + ' (serve the folder over HTTP, or use standalone.html)'; });
+
+  load().then(d => {
+    D = d;
+    qbs = D.qb_summary.qbs.filter(q => q.meets_min);
+    $('qbSelect').innerHTML = [...qbs].sort((a, b) => a.name.localeCompare(b.name)).map(q => `<option value="${q.qbId}">${esc(q.name)}</option>`).join('');
+    renderHeader(); renderCurve();
+    return selectQb(qbs[0].qbId);
+  }).catch(showErr);
+  function showErr(err) {
+    $('scope').innerHTML = `<span class="err">Failed to load data: ${esc(err.message)}. Serve the repo root (python -m http.server) and open /visualiser/, or open standalone.html.</span>`;
+  }
 })();
 </script>
 </body>
