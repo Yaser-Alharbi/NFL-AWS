@@ -128,6 +128,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; paddi
     q = q.toLowerCase();
     const frag = document.createDocumentFragment();
     data.plays.forEach((p, i) => {
+      if (p.chaosFrame == null) return;  // chaos plays only
       const l = label(p);
       if (q && !(l.t + ' ' + l.s + ' ' + p.gameId + ' ' + p.playId).toLowerCase().includes(q)) return;
       const d = document.createElement('div');
@@ -205,10 +206,20 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; paddi
     }
     g.globalAlpha = 1;
     g.font = `700 ${Math.round(r * 1.05)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    const order = play.entities.map((e, k) => k).sort((a, b) => (play.entities[a].team === 'football') - (play.entities[b].team === 'football'));
+    // draw order: other players (dimmed), then QB, then ball on top
+    const rank = e => e.team === 'football' ? 2 : e.id === play.qbId ? 1 : 0;
+    const order = play.entities.map((e, k) => k).sort((a, b) => rank(play.entities[a]) - rank(play.entities[b]));
+    const offScript = idx + play.firstFrame >= play.chaosFrame;
     order.forEach(k => {
       const e = play.entities[k], p = fr[k]; if (!p) return;
-      const cx = X(p[0] / 10), cy = Y(p[1] / 10);
+      const cx = X(p[0] / 10), cy = Y(p[1] / 10), isQb = e.id === play.qbId;
+      g.globalAlpha = rank(e) === 0 ? .55 : 1;
+      if (isQb) {
+        // halo: yellow while scripted, chaos colour once off-script
+        g.fillStyle = offScript ? colors.chaos : '#ffd60a';
+        g.globalAlpha = .35; g.beginPath(); g.arc(cx, cy, r * 2, 0, Math.PI * 2); g.fill();
+        g.globalAlpha = 1;
+      }
       if (e.team === 'football') {
         g.fillStyle = colors.ball; g.strokeStyle = '#fff'; g.lineWidth = 1;
         g.beginPath(); g.ellipse(cx, cy, r * .55, r * .38, 0, 0, Math.PI * 2); g.fill(); g.stroke(); return;
@@ -224,10 +235,20 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; paddi
         g.lineTo(cx - px * r * .9, cy - py * r * .9);
         g.closePath(); g.fill();
       }
-      g.fillStyle = col; g.strokeStyle = e.id === play.qbId ? '#ffd60a' : '#fff'; g.lineWidth = e.id === play.qbId ? 3 : 1.5;
+      g.fillStyle = col; g.strokeStyle = isQb ? (offScript ? colors.chaos : '#ffd60a') : '#fff'; g.lineWidth = isQb ? 3 : 1.5;
       g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.stroke();
       g.fillStyle = '#fff'; g.fillText(e.jersey ?? '', cx, cy + .5);
+      if (isQb) {
+        const tag = play.qbName + (offScript ? ' · off-script' : '');
+        g.font = `600 ${Math.round(r * 1.1)}px system-ui`;
+        const w = g.measureText(tag).width + 10, ty = cy - r * 2.6;
+        g.fillStyle = offScript ? colors.chaos : 'rgba(0,0,0,.65)';
+        g.beginPath(); g.roundRect(cx - w / 2, ty - r * .8, w, r * 1.6, 4); g.fill();
+        g.fillStyle = '#fff'; g.fillText(tag, cx, ty + .5);
+        g.font = `700 ${Math.round(r * 1.05)}px system-ui`;
+      }
     });
+    g.globalAlpha = 1;
     const f = idx + play.firstFrame;
     $('frameLbl').textContent = `frame ${f} · ${f === play.chaosFrame ? 'chaos' : (f > play.chaosFrame ? '+' : '') + (f - play.chaosFrame)}`;
     updateEventState(f);
