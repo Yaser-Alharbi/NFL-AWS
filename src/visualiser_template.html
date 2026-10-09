@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Script vs Chaos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the replay is a two-pane console (play list + field). Tokens follow the preview artifact. */
+:root{
+  --bg:#f4f5f2; --panel:#ffffff; --ink:#121512; --ink-2:#4b514b; --ink-3:#7a807a; --rule:#dde0da; --grid:#eceeea;
+  --script:#2a78d6; --chaos:#eb6834; --s3:#1baf7a; --s4:#eda100; --gain:#2a78d6; --loss:#e34948;
+  --turf:#e2ebdc; --turf-2:#d8e3d1; --turf-line:#c3d2bb; --box:rgba(18,21,18,.07); --los:#ffffff; --rush:#4a3aa7; --qb:#121512; --ball:#8a5a2b;
+  --tint-s:color-mix(in srgb,var(--script) 13%,var(--panel)); --tint-c:color-mix(in srgb,var(--chaos) 15%,var(--panel));
+  --qb-halo:color-mix(in srgb,var(--qb) 18%,transparent);
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121412; --panel:#1b1e1b; --ink:#f2f4f1; --ink-2:#c3c7c1; --ink-3:#8d938c; --rule:#2c312c; --grid:#252925;
+  --script:#3987e5; --chaos:#d95926; --s3:#199e70; --s4:#c98500; --gain:#3987e5; --loss:#e66767;
+  --turf:#1d281d; --turf-2:#212d21; --turf-line:#304230; --box:rgba(242,244,241,.08); --los:#e8ece6; --rush:#9085e9; --qb:#f2f4f1; --ball:#c08a55;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121412; --panel:#1b1e1b; --ink:#f2f4f1; --ink-2:#c3c7c1; --ink-3:#8d938c; --rule:#2c312c; --grid:#252925;
+  --script:#3987e5; --chaos:#d95926; --s3:#199e70; --s4:#c98500; --gain:#3987e5; --loss:#e66767;
+  --turf:#1d281d; --turf-2:#212d21; --turf-line:#304230; --box:rgba(242,244,241,.08); --los:#e8ece6; --rush:#9085e9; --qb:#f2f4f1; --ball:#c08a55;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:40px 72px;display:flex;flex-direction:column;gap:56px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(48px,10vw,96px);line-height:.88;margin:6px 0 0;letter-spacing:.005em;text-transform:uppercase;text-wrap:balance}
+h1 .vs{color:var(--ink-3);font-weight:500}
+h2{font-family:var(--f-display);font-weight:700;font-size:32px;line-height:1.05;margin:0;text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
+.lede{font-size:19px;color:var(--ink-2);max-width:60ch;margin:16px 0 0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+p{margin:0;max-width:70ch}
+.muted{color:var(--ink-2)}
+.small{font-size:13px;color:var(--ink-3)}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:20px;min-width:0;display:flex;flex-direction:column;gap:14px}
+
+/* Hero answer */
+.answer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px}
+.tile{border-top:4px solid var(--rule);padding:12px 2px 0;min-width:0}
+.tile.s{border-color:var(--script)} .tile.c{border-color:var(--chaos)}
+.tile .k{font-size:13px;color:var(--ink-2)}
+.tile .fig{font-family:var(--f-display);font-weight:600;font-size:clamp(40px,7vw,64px);line-height:1;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.answer-line{margin-top:16px;font-size:16px;color:var(--ink-2)}
+@media (max-width:560px){.answer{grid-template-columns:1fr}}
+
+.defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.def{border-top:3px solid var(--rule);padding-top:10px;min-width:0}
+.def .k{font-family:var(--f-display);font-size:21px;text-transform:uppercase;font-weight:700}
+.def.s{border-color:var(--script)} .def.c{border-color:var(--chaos)}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.sw.dot{border-radius:50%}
+.sw.ring{background:none;border:2px solid currentColor;border-radius:50%}
+.sw.line{height:3px;width:16px;border-radius:2px;vertical-align:3px}
+svg{display:block}
+svg text{font-family:var(--f-body);fill:var(--ink-2)}
+.tbl-wrap{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td{font-family:var(--f-mono);font-size:13px}
+td:first-child{font-family:var(--f-body);font-size:14px}
+.tip{position:fixed;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.14);z-index:5;max-width:290px}
+.tip b{font-weight:600}
+.dot{cursor:pointer}
+.dot:focus{outline:none}
+.dot:focus-visible circle.m{stroke:var(--ink);stroke-width:3}
+
+/* Badges: scripted vs off script */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 10px 2px 8px;white-space:nowrap;color:var(--ink)}
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.badge.s{background:var(--tint-s)} .badge.s::before{background:var(--script)}
+.badge.c{background:var(--tint-c)} .badge.c::before{background:var(--chaos)}
+.badge.n{background:var(--grid)} .badge.n::before{background:var(--ink-3)}
+.badge.big{font-size:15px;padding:5px 14px 5px 12px}
+.badge.big::before{width:10px;height:10px}
+
+/* QB card */
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+.card-head .name{font-family:var(--f-display);font-size:34px;font-weight:700;text-transform:uppercase;line-height:1.05}
+.pill{align-self:flex-start;border:1px solid var(--rule);border-radius:999px;padding:3px 12px;font-size:13px;color:var(--ink-2)}
+.vals{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.vals .k{font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.vals .big{font-family:var(--f-display);font-size:34px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.bar-k{font-size:13px;color:var(--ink-2);margin-bottom:6px}
+.brow{display:grid;grid-template-columns:72px 1fr 104px;align-items:center;gap:8px;font-size:12px;margin-bottom:5px}
+.brow .track{height:12px;background:var(--grid);border-radius:4px;overflow:hidden}
+.brow .fill{height:100%;border-radius:0 4px 4px 0}
+.brow .v{font-family:var(--f-mono);text-align:right;color:var(--ink);white-space:nowrap}
+.brow .v small{color:var(--ink-3);font-size:11px}
+
+/* Controls */
+select,button{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;max-width:100%}
+button{cursor:pointer}
+button:hover{border-color:var(--ink-3)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--script);outline-offset:2px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.controls label{font-size:13px;color:var(--ink-3)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.btn-primary{background:var(--ink);color:var(--panel);border-color:var(--ink);min-width:84px;font-weight:500}
+.btn-link{border:0;padding:0;background:none;color:var(--script);font-weight:500}
+
+/* Replay console */
+.console{display:grid;grid-template-columns:300px minmax(0,1fr);gap:0;padding:0;overflow:hidden}
+.plays{border-right:1px solid var(--rule);display:flex;flex-direction:column;min-width:0}
+.plays-head{padding:16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--rule)}
+.plays-head select{width:100%}
+.plist{overflow-y:auto;max-height:640px;min-height:0;flex:1}
+.prow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--rule);border-left:4px solid transparent;border-radius:0;padding:10px 14px 10px 12px;background:none}
+.prow:hover{background:var(--grid)}
+.prow[aria-current="true"]{background:var(--grid);border-left-color:var(--ink)}
+.prow .when{font-size:13px;color:var(--ink-2)}
+.prow .pl{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.prow .res{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);text-align:right;align-self:center}
+.prow .res b{display:block;font-weight:500;color:var(--ink);font-size:13px}
+.stage{padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.verdict{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.verdict .why{font-size:15px;color:var(--ink-2)}
+.replay-title{font-family:var(--f-display);font-size:24px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+.field-wrap{position:relative;border-radius:8px;overflow:hidden}
+.live{position:absolute;top:10px;right:10px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 10px rgba(0,0,0,.08);max-width:60%}
+.live .t{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.timeline{position:relative;min-width:0;flex:1}
+.timeline input{width:100%;margin:0;accent-color:var(--ink)}
+.tl-marks{position:relative;height:14px;margin:0 8px}
+.tl-marks i{position:absolute;top:2px;width:3px;height:10px;border-radius:2px;transform:translateX(-50%)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--f-mono);font-size:12px;padding:3px 9px;border-radius:999px;color:var(--ink-2)}
+.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
+.desc{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);background:var(--grid);padding:9px 11px;border-radius:6px;overflow-wrap:anywhere}
+.qb .halo{animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.3);opacity:.45}}
+@media (max-width:860px){.console{grid-template-columns:1fr}.plays{border-right:0;border-bottom:1px solid var(--rule)}.plist{max-height:260px}}
+
+.corners{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px;color:var(--ink-2)}
+.corners b{font-weight:500;color:var(--ink-3);display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.footer{border-top:1px solid var(--rule);padding-top:16px}
+@media (max-width:520px){.corners{grid-template-columns:1fr}.brow{grid-template-columns:64px 1fr 96px}.stage{padding:14px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="scope"></div>
+    <h1>Script <span class="vs">vs</span> Chaos</h1>
+    <p class="lede">When a quarterback's pass play breaks down under pressure, does leaving the script help or hurt?</p>
+    <div class="answer">
+      <div class="tile s"><div class="k">Scripted plays, success under pressure</div><div class="fig" id="h-s"></div><div class="small" id="h-sn"></div></div>
+      <div class="tile c"><div class="k">Off-script plays, success under pressure</div><div class="fig" id="h-c"></div><div class="small" id="h-cn"></div></div>
+      <div class="tile"><div class="k">Gap, off script minus scripted</div><div class="fig" id="h-g"></div><div class="small">League chaos value</div></div>
+    </div>
+    <p class="answer-line" id="answer-line"></p>
+  </header>
+
+  <section>
+    <h2>The terms</h2>
+    <div class="defs" id="defs"></div>
+  </section>
+
+  <section>
+    <h2>League-wide, under pressure</h2>
+    <div class="panel">
+      <div class="bars" id="league-bars"></div>
+      <div class="tbl-wrap"><table id="league-tbl"></table></div>
+      <p class="small" id="league-note"></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quarterbacks under pressure</h2>
+    <p class="muted" id="scatter-line"></p>
+    <div class="panel">
+      <div class="legend"><span><i class="sw dot" style="background:var(--gain)"></i>Chaos value above the league</span><span><i class="sw dot" style="background:var(--loss)"></i>Chaos value below the league</span><span><i class="sw line" style="background:var(--ink-3)"></i>League splits</span></div>
+      <div id="scatter-wrap"><svg id="scatter" width="100%" role="img" aria-label="QB off-script rate against shrunk chaos value"></svg></div>
+      <div class="corners" id="corners"></div>
+    </div>
+    <div class="panel" id="card"></div>
+  </section>
+
+  <section id="replay">
+    <h2>Play replay</h2>
+    <p class="muted">Every pressured play of the quarterbacks above, from the snap to the throw, sack or run. Pick a QB, then a play. The offense moves up the field.</p>
+    <div class="panel console">
+      <aside class="plays">
+        <div class="plays-head">
+          <label class="small" for="qb-select">Quarterback</label>
+          <select id="qb-select"></select>
+          <div class="seg" role="group" aria-label="Filter plays">
+            <button type="button" data-f="all" aria-pressed="true">All</button>
+            <button type="button" data-f="chaos" aria-pressed="false">Off script</button>
+            <button type="button" data-f="scripted" aria-pressed="false">Scripted</button>
+          </div>
+          <span class="small" id="play-count"></span>
+        </div>
+        <div class="plist" id="play-list" role="list"></div>
+      </aside>
+      <div class="stage">
+        <div class="replay-title" id="replay-title"></div>
+        <div class="verdict"><span id="verdict"></span><span class="why" id="verdict-why"></span></div>
+        <div class="field-wrap" id="field-wrap">
+          <svg id="field" width="100%" role="img" aria-label="Top-down play replay"></svg>
+          <div class="live" id="live" aria-live="polite"></div>
+        </div>
+        <div class="controls">
+          <button id="play" class="btn-primary" type="button">Play</button>
+          <button id="speed" type="button" aria-label="Playback speed">1x</button>
+          <div class="timeline"><input id="scrub" type="range" min="0" value="0" aria-label="Frame"><div class="tl-marks" id="tl-marks"></div></div>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div class="legend">
+          <span><i class="sw dot" style="background:var(--qb)"></i>Quarterback</span>
+          <span><i class="sw dot" style="background:var(--rush)"></i>Pass rusher</span>
+          <span style="color:var(--rush)"><i class="sw ring"></i><span class="muted">PFF credits a hit, hurry or sack</span></span>
+          <span><i class="sw dot" style="background:var(--ball)"></i>Ball</span>
+          <span><i class="sw line" style="background:var(--ink-3)"></i>QB path on script</span>
+          <span><i class="sw line" style="background:var(--chaos)"></i>QB path off script</span>
+          <span style="color:var(--loss)"><i class="sw ring"></i><span class="muted">Pressure moment</span></span>
+          <span><i class="sw" style="background:var(--box);outline:1px solid var(--rule)"></i>Tackle box</span>
+          <span><i class="sw line" style="background:var(--s4)"></i>First-down line</span>
+        </div>
+        <p class="small" id="field-note"></p>
+        <div class="desc" id="playdesc"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Success by time held after pressure</h2>
+    <p class="muted" id="curve-line"></p>
+    <div class="panel">
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Curve view">
+          <button type="button" data-v="no_hold" aria-pressed="true">Scripted vs off script</button>
+          <button type="button" data-v="split" aria-pressed="false">Off script by first rule</button>
+        </div>
+      </div>
+      <p class="small" id="curve-note"></p>
+      <div class="legend" id="curve-legend"></div>
+      <div id="curve-wrap"><svg id="curve" width="100%" role="img" aria-label="Success rate by seconds held after pressure"></svg></div>
+      <div class="tbl-wrap"><table id="curve-tbl"></table></div>
+    </div>
+  </section>
+
+  <p class="small footer" id="footer"></p>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script type="application/json" id="data">/*__DATA__*/</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const M=D.meta,T=M.thresholds,SPLIT=M.quadrant_splits,FPS=T.frames_per_second;
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=(v,d=1)=>v==null?'n/a':(v*100).toFixed(d)+'%';
+const pts=v=>v==null?'n/a':(v>=0?'+':'')+(v*100).toFixed(1)+' pts';
+const secs=f=>(f/FPS).toFixed(1)+' s';
+const ord=n=>({1:'1st',2:'2nd',3:'3rd',4:'4th'})[n]||String(n);
+const lastName=n=>String(n||'').split(' ').slice(-1)[0];
+const LABEL={chaos:'Off script',scripted:'Scripted'};
+const lineName=nm=>nm==='scripted'?'Scripted':nm==='chaos'?'Off script':nm.replace(/^chaos: /,'Off script, first rule: ');
+const RULE={box:'left the tackle box',drift:`drifted more than ${T.drift} yd from the drop spot`,hold:`held the ball past ${T.hold} s`};
+const RULE_SHORT={box:'left tackle box',drift:`drift > ${T.drift} yd`,hold:`held > ${T.hold} s`};
+const RESULT={C:'Complete pass',I:'Incomplete pass',S:'Sack',IN:'Interception',R:'Scramble'};
+const RESULT_SHORT={C:'Complete',I:'Incomplete',S:'Sack',IN:'INT',R:'Scramble'};
+const END={pass:'pass thrown',sack:'sack',run:'QB run',qb_crossed_los:'QB crossed the line',play_end:'tracking ended'};
+const badge=(label,big)=>`<span class="badge ${label==='chaos'?'c':'s'}${big?' big':''}">${LABEL[label]}</span>`;
+
+const tip=$('tip');
+function showTip(html,ev){tip.innerHTML=html;tip.hidden=false;moveTip(ev)}
+function moveTip(ev){const r=tip.getBoundingClientRect();let x=ev.clientX+14,y=ev.clientY+14;if(x+r.width>innerWidth-8)x=ev.clientX-r.width-14;if(y+r.height>innerHeight-8)y=ev.clientY-r.height-14;tip.style.left=Math.max(4,x)+'px';tip.style.top=Math.max(4,y)+'px'}
+function hideTip(){tip.hidden=true}
+function niceTicks(lo,hi,n){const span=hi-lo,mag=10**Math.floor(Math.log10(span/n));const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>span/s<=n);const out=[];for(let v=Math.ceil(lo/step-1e-9)*step;v<=hi+1e-9;v+=step)out.push(+v.toFixed(10));return {out,step}}
+
+/* Data shared by several views */
+const QB=D.qbs.filter(q=>q.meets_min);
+const LG=D.league,lrow=(g,v)=>LG.find(r=>r.group===g&&r.value===v);
+const LS=lrow('label','scripted'),LC=lrow('label','chaos');
+
+/* Header, answer and terms */
+$('scope').textContent=`Season ${M.scope.seasons.join(', ')} · weeks ${M.scope.weeks[0]} to ${M.scope.weeks[1]} · ${M.scope.games} games · tracking + PFF scouting`;
+$('h-s').textContent=pct(LS.success_rate);$('h-sn').textContent=`${LS.success_plays} pressured plays`;
+$('h-c').textContent=pct(LC.success_rate);$('h-cn').textContent=`${LC.success_plays} pressured plays`;
+$('h-g').textContent=pts(LC.success_rate-LS.success_rate);
+$('answer-line').textContent=`League-wide, pressured plays that went off script succeeded ${(Math.abs(LC.success_rate-LS.success_rate)*100).toFixed(1)} percentage points ${LC.success_rate<LS.success_rate?'less':'more'} often than scripted ones, and ended in a sack ${pct(LC.sack_rate)} of the time against ${pct(LS.sack_rate)}. The QB view below shows who beats that league number.`;
+(function(){
+  const SR=T.success_ratio,p0=v=>Math.round(v*100)+'%',P=M.priors;
+  const late=SR['3']===SR['4']?`${p0(SR['3'])} on 3rd and 4th`:`${p0(SR['3'])} on 3rd, ${p0(SR['4'])} on 4th`;
+  const defs=[
+    ['s','Scripted','None of the off-script rules fire between the snap and the throw, sack or run. Designed rollouts and designed runs are left out.'],
+    ['c','Off script (chaos)',`The QB drifts more than ${T.drift} yd from the drop spot, leaves the tackle box (the space between the two tackles at the snap), or holds the ball past ${T.hold} s. All three come from tracking, not from PFF labels. A play that left the script before pressure counts as off script.`],
+    ['','Pressured',`PFF credits a pass rusher with a hit, hurry or sack, and tracking puts a rusher within ${T.pressure_distance} yd of the QB. Time held after pressure is counted from that frame.`],
+    ['','Success',`A gain of at least ${p0(SR['1'])} of the yards to go on 1st down, ${p0(SR['2'])} on 2nd, ${late}.`],
+    ['','Chaos value',`Off-script success rate minus scripted success rate, pressured plays only. Each rate is shrunk toward the league rate (empirical Bayes). A QB's own plays carry half the weight at ${Math.round(P.chaos_success.prior_strength)} off-script plays and ${Math.round(P.scripted_success.prior_strength)} scripted plays.`],
+  ];
+  $('defs').innerHTML=defs.map(([c,k,t])=>`<div class="def ${c}"><div class="k">${k}</div><p class="muted">${esc(t)}</p></div>`).join('');
+  $('footer').textContent=`Built ${M.build_date} from the provided dataset only. Every number on this page is computed from it. Pressured plays: ${M.counts.pressured_plays}. QBs shown: ${M.counts.qbs_shown} of ${M.counts.qbs}. Replays: ${M.counts.replays}.`;
+})();
+
+/* Shared bar blocks (league and QB card use one scale per metric) */
+const MAX={};['success_rate','sack_rate','int_rate'].forEach(k=>{MAX[k]=Math.max(LS[k],LC[k],...QB.flatMap(q=>[q['scripted_'+k],q['chaos_'+k]].filter(v=>v!=null)))||1});
+function bars(title,key,s,c,sn,cn){
+  const r=(lab,v,n,col)=>`<div class="brow"><span>${lab}</span><div class="track"><div class="fill" style="width:${v==null?0:Math.min(100,v/MAX[key]*100)}%;background:${col}"></div></div><span class="v">${pct(v)} <small>n=${n}</small></span></div>`;
+  return `<div><div class="bar-k">${title}</div>${r('Scripted',s,sn,'var(--script)')}${r('Off script',c,cn,'var(--chaos)')}</div>`;
+}
+
+/* League */
+(function(){
+  $('league-bars').innerHTML=bars('Success rate','success_rate',LS.success_rate,LC.success_rate,LS.success_plays,LC.success_plays)
+    +bars('Sack rate','sack_rate',LS.sack_rate,LC.sack_rate,LS.plays,LC.plays)
+    +bars('INT rate','int_rate',LS.int_rate,LC.int_rate,LS.plays,LC.plays);
+  const rows=[['Scripted',LS],['Off script, all',LC]].concat(T.off_script_rule_order.map(r=>[`Off script, first rule: ${RULE[r]}`,lrow('chaos by off_script_rule',r)]).filter(([,d])=>d));
+  $('league-tbl').innerHTML='<tr><th>Pressured plays</th><th>Plays</th><th>Success</th><th>Sack</th><th>INT</th></tr>'+
+    rows.map(([k,d])=>`<tr><td>${esc(k)}</td><td>${d.plays}</td><td>${pct(d.success_rate)}</td><td>${pct(d.sack_rate)}</td><td>${pct(d.int_rate)}</td></tr>`).join('');
+  $('league-note').textContent='Success rate leaves out plays with no down to score (n shows the plays used). Sack and INT rates use every play. Bars for one metric share one scale here and on the QB card, set by the highest rate among the league and the QBs shown.';
+})();
+
+/* QB quadrant */
+let sel=QB.reduce((a,b)=>b.chaos_plays>a.chaos_plays?b:a);
+const CORNER={};D.qbs.forEach(q=>{CORNER[(q.shrunk_chaos_value>SPLIT.chaos_value?'T':'B')+(q.chaos_rate>=SPLIT.chaos_rate?'R':'L')]=q.quadrant});
+$('scatter-line').textContent=`Each dot is a QB with at least ${T.qb_min_plays} off-script and ${T.qb_min_plays} scripted pressured plays (${QB.length} of ${D.qbs.length} QBs). Right: goes off script more often than the league (${pct(SPLIT.chaos_rate)} of pressured plays). Up: chaos value above the league (${pts(SPLIT.chaos_value)}). Shrinkage pulls small samples toward the league. Click a dot for the card and the replays.`;
+$('corners').innerHTML=[['TL','↖ Top left'],['TR','↗ Top right'],['BL','↙ Bottom left'],['BR','↘ Bottom right']].filter(([k])=>CORNER[k]).map(([k,n])=>`<div><b>${n}</b>${esc(CORNER[k])}</div>`).join('');
+function renderScatter(){
+  const svg=$('scatter'),W=Math.max(300,$('scatter-wrap').clientWidth),narrow=W<640;
+  const H=narrow?360:480,L=narrow?46:62,R=W-(narrow?14:24),Tp=16,B=H-50;
+  svg.innerHTML='';svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
+  const ext=a=>{const lo=Math.min(...a),hi=Math.max(...a),p=(hi-lo)*0.08||0.01;return [lo-p,hi+p]};
+  const [x0,x1]=ext(QB.map(q=>q.chaos_rate).concat(SPLIT.chaos_rate)),[y0,y1]=ext(QB.map(q=>q.shrunk_chaos_value).concat(SPLIT.chaos_value));
+  const X=v=>L+(R-L)*(v-x0)/(x1-x0),Y=v=>B-(B-Tp)*(v-y0)/(y1-y0);
+  const xt=niceTicks(x0,x1,narrow?4:6),yt=niceTicks(y0,y1,6);
+  xt.out.forEach(v=>{el('line',{x1:X(v),x2:X(v),y1:Tp,y2:B,stroke:'var(--grid)'},svg);el('text',{x:X(v),y:B+18,'text-anchor':'middle','font-size':12},svg).textContent=Math.round(v*100)+'%'});
+  yt.out.forEach(v=>{el('line',{x1:L,x2:R,y1:Y(v),y2:Y(v),stroke:'var(--grid)'},svg);el('text',{x:L-8,y:Y(v)+4,'text-anchor':'end','font-size':12},svg).textContent=(v>0?'+':'')+(v*100).toFixed(yt.step*100<1?1:0)});
+  el('line',{x1:X(SPLIT.chaos_rate),x2:X(SPLIT.chaos_rate),y1:Tp,y2:B,stroke:'var(--ink-3)','stroke-dasharray':'5 4'},svg);
+  el('line',{x1:L,x2:R,y1:Y(SPLIT.chaos_value),y2:Y(SPLIT.chaos_value),stroke:'var(--ink-3)','stroke-dasharray':'5 4'},svg);
+  el('text',{x:(L+R)/2,y:B+40,'text-anchor':'middle','font-size':13},svg).textContent='Share of pressured plays that went off script';
+  el('text',{x:12,y:(Tp+B)/2,'text-anchor':'middle','font-size':13,transform:`rotate(-90 12 ${(Tp+B)/2})`},svg).textContent='Chaos value, shrunk (pts)';
+  const far=[...QB].sort((a,b)=>Math.abs(b.shrunk_chaos_value-SPLIT.chaos_value)-Math.abs(a.shrunk_chaos_value-SPLIT.chaos_value)).slice(0,4);
+  const show=new Set(far.concat([[...QB].sort((a,b)=>b.chaos_rate-a.chaos_rate)[0],sel]).map(q=>q.qbId));
+  const placed=QB.map(q=>{const x=X(q.chaos_rate),y=Y(q.shrunk_chaos_value);return [x-7,y-7,x+7,y+7]});
+  [...QB].sort((a,b)=>(b===sel)-(a===sel)).forEach(q=>{
+    const cx=X(q.chaos_rate),cy=Y(q.shrunk_chaos_value),up=q.shrunk_chaos_value>SPLIT.chaos_value,on=q===sel;
+    const g=el('g',{class:'dot',tabindex:0,role:'button','aria-label':`${q.name}, off script on ${pct(q.chaos_rate)}, chaos value ${pts(q.shrunk_chaos_value)}`},svg);
+    el('circle',{cx,cy,r:14,fill:'transparent'},g);
+    if(on)el('circle',{cx,cy,r:14,fill:'none',stroke:'var(--ink)','stroke-width':1.5},g);
+    el('circle',{class:'m',cx,cy,r:on?8:6,fill:up?'var(--gain)':'var(--loss)',stroke:'var(--panel)','stroke-width':2},g);
+    if(show.has(q.qbId)){const w=q.name.length*(on?7.4:6.8),opts=cx>R-130?[-1,1]:[1,-1];
+      const box=s=>s>0?[cx+17,cy-9,cx+17+w,cy+5]:[cx-17-w,cy-9,cx-17,cy+5];
+      const side=opts.find(s=>{const b=box(s);return b[0]>=L&&b[2]<=R&&!placed.some(p=>b[0]<p[2]&&b[2]>p[0]&&b[1]<p[3]&&b[3]>p[1])})??(on?opts[0]:null);
+      if(side!=null){placed.push(box(side));el('text',{x:cx+side*17,y:cy+4,'text-anchor':side>0?'start':'end','font-size':on?13:12,style:`fill:var(--ink);font-weight:${on?600:400}`},g).textContent=q.name}}
+    const html=`<b>${esc(q.name)}</b> (${esc(q.team)})<br>Off script on ${pct(q.chaos_rate)} of ${q.pressured_plays} pressured plays<br>Chaos value ${pts(q.shrunk_chaos_value)} shrunk, ${pts(q.raw_chaos_value)} raw<br>Success: off script ${pct(q.chaos_success_rate)} (n=${q.chaos_success_plays}), scripted ${pct(q.scripted_success_rate)} (n=${q.scripted_success_plays})`;
+    g.addEventListener('mousemove',e=>showTip(html,e));g.addEventListener('mouseleave',hideTip);
+    g.addEventListener('click',()=>selectQB(q));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectQB(q)}});
+  });
+}
+
+/* QB card */
+function renderCard(){
+  const q=sel;
+  $('card').innerHTML=`<div class="card-head"><span class="name">${esc(q.name)}</span><span class="small">${esc(q.team)} · ${q.pressured_plays} pressured plays: ${q.scripted_plays} scripted, ${q.chaos_plays} off script (${pct(q.chaos_rate)})</span></div>
+  <div class="pill">${esc(q.quadrant)}</div>
+  <div class="vals">
+    <div><div class="k">Chaos value, shrunk</div><div class="big">${pts(q.shrunk_chaos_value)}</div><div class="small">League ${pts(SPLIT.chaos_value)}</div></div>
+    <div><div class="k">Chaos value, raw</div><div class="big">${pts(q.raw_chaos_value)}</div><div class="small">Before shrinkage</div></div>
+    <div><div class="k">Success off script, shrunk</div><div class="big">${pct(q.shrunk_chaos_success)}</div><div class="small">Scripted, shrunk: ${pct(q.shrunk_scripted_success)}</div></div>
+  </div>
+  <div class="bars">${bars('Success rate, raw','success_rate',q.scripted_success_rate,q.chaos_success_rate,q.scripted_success_plays,q.chaos_success_plays)}${bars('Sack rate','sack_rate',q.scripted_sack_rate,q.chaos_sack_rate,q.scripted_plays,q.chaos_plays)}${bars('INT rate','int_rate',q.scripted_int_rate,q.chaos_int_rate,q.scripted_plays,q.chaos_plays)}</div>
+  <div class="controls" style="justify-content:space-between"><p class="small">Pressured plays only. With ${q.chaos_success_plays} off-script plays, one play moves the raw off-script success rate by ${(100/q.chaos_success_plays).toFixed(1)} points.</p><button type="button" class="btn-link" id="to-replay">Watch ${esc(lastName(q.name))}'s plays ↓</button></div>`;
+  $('to-replay').addEventListener('click',()=>$('replay').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
+}
+
+/* Replay */
+const byQB=new Map();D.replays.forEach(r=>{if(!byQB.has(r.qbId))byQB.set(r.qbId,[]);byQB.get(r.qbId).push(r)});
+const qsel=$('qb-select'),plist=$('play-list'),scrub=$('scrub'),btn=$('play'),spd=$('speed');
+[...QB].sort((a,b)=>a.name.localeCompare(b.name)).forEach(q=>{const o=document.createElement('option');o.value=q.qbId;o.textContent=`${q.name} (${q.team})`;qsel.appendChild(o)});
+let filt='all',list=[],cur=null,fi=0,timer=null,F=null,speed=1;
+const at=(a,k)=>a[2*k]==null?null:[a[2*k],a[2*k+1]];
+const yds=v=>(v>0?'+':'')+v+' yd';
+function fillPlays(){
+  const all=byQB.get(sel.qbId)||[];
+  list=all.filter(r=>filt==='all'||r.label===filt);
+  const nc=all.filter(r=>r.label==='chaos').length;
+  $('play-count').textContent=`${list.length} shown · ${all.length} pressured plays: ${nc} off script, ${all.length-nc} scripted`;
+  plist.innerHTML=list.map((r,k)=>`<button type="button" class="prow" role="listitem" data-k="${k}" aria-current="false">
+    <span class="pl">${badge(r.label)}<span class="when">Wk ${r.week} · Q${r.quarter} ${esc(r.gameClock)} · ${ord(r.down)} &amp; ${r.yardsToGo}</span>${r.label==='chaos'?`<span class="small">First rule: ${esc(RULE_SHORT[r.off_script_rule]||'')}</span>`:''}</span>
+    <span class="res"><b>${esc(RESULT_SHORT[r.passResult]||r.passResult)}</b>${yds(r.prePenaltyPlayResult)}</span></button>`).join('');
+  plist.querySelectorAll('.prow').forEach(b=>b.addEventListener('click',()=>loadPlay(+b.dataset.k)));
+  plist.scrollTop=0;
+  if(list.length)loadPlay(0);else{stop();cur=null;$('field').innerHTML='';$('chips').innerHTML='';$('verdict').innerHTML='';$('verdict-why').textContent='No plays for this filter.';$('playdesc').textContent='';$('live').hidden=true}
+}
+function stop(){clearInterval(timer);timer=null;btn.textContent='Play'}
+function loadPlay(idx){
+  stop();const r=list[idx];cur=r;const n=r.qb.length/2;scrub.max=n-1;
+  plist.querySelectorAll('.prow').forEach(b=>b.setAttribute('aria-current',+b.dataset.k===idx));
+  const k=f=>f==null?null:f-r.snap_frame;
+  const ev=[[0,'Snap','var(--ink-3)'],[k(r.drop_frame),'Drop spot set','var(--ink-3)'],[k(r.pressure_frame),'Pressure','var(--loss)'],[n-1,`End: ${END[r.end_reason]||r.end_reason}`,'var(--ink)']];
+  if(r.off_script_frame!=null)ev.push([k(r.off_script_frame),`Off script: ${RULE_SHORT[r.off_script_rule]}`,'var(--chaos)']);
+  ev.sort((a,b)=>a[0]-b[0]);
+  $('chips').innerHTML=ev.map(([f,t,c])=>`<button type="button" class="chip" data-at="${f}"><i style="background:${c}"></i>${esc(t)} · ${secs(f)}</button>`).join('');
+  $('chips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{stop();fi=+b.dataset.at;draw(fi)}));
+  $('tl-marks').innerHTML=ev.filter(([f])=>f>0).map(([f,t,c])=>`<i title="${esc(t)}" style="left:${n>1?f/(n-1)*100:0}%;background:${c}"></i>`).join('');
+  $('replay-title').textContent=`${sel.name} · ${r.possessionTeam} vs ${r.defensiveTeam} · Week ${r.week}, Q${r.quarter} ${r.gameClock} · ${ord(r.down)} & ${r.yardsToGo}`;
+  $('verdict').innerHTML=badge(r.label,true);
+  const res=`${RESULT[r.passResult]||r.passResult}, ${yds(r.prePenaltyPlayResult)}, ${r.success===true?'a success':r.success===false?'not a success':'success not scored'}`;
+  const how=r.label==='chaos'?`Went off script at ${secs(k(r.off_script_frame))}: ${RULE[r.off_script_rule]}.`:'Stayed on script: no off-script rule fired.';
+  $('verdict-why').textContent=`${how} Pressure at ${secs(k(r.pressure_frame))}. Result: ${res}.`;
+  $('playdesc').textContent=r.playDescription||'';
+  $('field-note').textContent=`Dashed ring: ${T.drift} yd around the drop spot (the drift rule). Shaded band: tackle box at the snap. White dashed line: line of scrimmage. At the pressure moment a red line joins the QB to the nearest rusher (within ${T.pressure_distance} yd).`;
+  $('live').hidden=false;buildField();fi=n-1;draw(fi);
+}
+function buildField(){
+  const r=cur,svg=$('field'),W=Math.max(300,$('field-wrap').clientWidth);svg.innerHTML='';
+  const xs=[r.los_x,r.drop_x-T.drift,r.drop_x+T.drift],ys=[r.drop_y-T.drift,r.drop_y+T.drift];
+  if(r.box_lo!=null)ys.push(r.box_lo,r.box_hi);
+  const add=a=>{for(let k=0;k<a.length;k+=2)if(a[k]!=null){xs.push(a[k]);ys.push(a[k+1])}};
+  add(r.qb);add(r.ball);r.rushers.forEach(x=>add(x.xy));
+  let x0=Math.min(...xs)-3,x1=Math.max(...xs)+3,y0=Math.min(...ys)-3,y1=Math.max(...ys)+3;
+  const maxH=Math.max(320,Math.min(580,W*0.85)),minH=300;
+  let S=W/(y1-y0);
+  if((x1-x0)*S>maxH){S=maxH/(x1-x0);const pad=(W/S-(y1-y0))/2;y0-=pad;y1+=pad}
+  if((x1-x0)*S<minH){const pad=(minH/S-(x1-x0))/2;x0-=pad;x1+=pad}
+  const H=(x1-x0)*S;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
+  const SX=y=>(y1-y)*S,SY=x=>(x1-x)*S;
+  el('rect',{x:0,y:0,width:W,height:H,fill:'var(--turf)'},svg);
+  for(let x=Math.floor(x0/5)*5;x<=x1;x+=5){if(Math.round(x/5)%2===0)el('rect',{x:0,y:SY(x+5),width:W,height:5*S,fill:'var(--turf-2)'},svg)}
+  for(let x=Math.ceil(x0);x<=x1;x++){if(x%5)el('line',{x1:0,x2:6,y1:SY(x),y2:SY(x),stroke:'var(--turf-line)'},svg),el('line',{x1:W-6,x2:W,y1:SY(x),y2:SY(x),stroke:'var(--turf-line)'},svg)}
+  for(let x=Math.ceil(x0/5)*5;x<=x1;x+=5){el('line',{x1:0,x2:W,y1:SY(x),y2:SY(x),stroke:'var(--turf-line)','stroke-width':x%10===0?2:1},svg);
+    if(x%10===0&&x>10&&x<110)el('text',{x:14,y:SY(x)-6,'font-size':18,style:'fill:var(--turf-line);font-family:var(--f-display);font-weight:700'},svg).textContent=x<=60?x-10:110-x}
+  if(r.box_lo!=null){el('rect',{x:SX(r.box_hi),y:0,width:(r.box_hi-r.box_lo)*S,height:H,fill:'var(--box)'},svg);
+    el('text',{x:(SX(r.box_hi)+SX(r.box_lo))/2,y:16,'text-anchor':'middle','font-size':11,style:'fill:var(--ink-3);letter-spacing:.08em'},svg).textContent='TACKLE BOX'}
+  const fd=r.los_x+r.yardsToGo;
+  if(fd<=x1){el('line',{x1:0,x2:W,y1:SY(fd),y2:SY(fd),stroke:'var(--s4)','stroke-width':3},svg);el('text',{x:W-10,y:SY(fd)<24?SY(fd)+16:SY(fd)-6,'text-anchor':'end','font-size':11,style:'fill:var(--ink-2);letter-spacing:.06em'},svg).textContent='1ST DOWN'}
+  el('line',{x1:0,x2:W,y1:SY(r.los_x),y2:SY(r.los_x),stroke:'var(--los)','stroke-dasharray':'8 6','stroke-width':3},svg);
+  el('text',{x:W-10,y:SY(r.los_x)-6,'text-anchor':'end','font-size':11,style:'fill:var(--ink-2);letter-spacing:.06em'},svg).textContent='LINE OF SCRIMMAGE';
+  const drop=el('g',{},svg),dx=SX(r.drop_y),dy=SY(r.drop_x);
+  el('circle',{cx:dx,cy:dy,r:T.drift*S,fill:'none',stroke:'var(--ink-3)','stroke-dasharray':'4 4','stroke-width':1.5},drop);
+  el('path',{d:`M${dx-5},${dy}h10M${dx},${dy-5}v10`,stroke:'var(--ink-3)','stroke-width':1.5,fill:'none'},drop);
+  const trail=el('g',{},svg),marks=el('g',{},svg),dots=el('g',{},svg);
+  const pk=r.pressure_frame-r.snap_frame,ok=r.off_script_frame==null?null:r.off_script_frame-r.snap_frame;
+  const press=el('g',{},marks),qp=at(r.qb,pk);
+  if(qp){let best=null;r.rushers.forEach(x=>{const p=at(x.xy,pk);if(p){const d=Math.hypot(p[0]-qp[0],p[1]-qp[1]);if(!best||d<best.d)best={p,d}}});
+    if(best)el('line',{x1:SX(qp[1]),y1:SY(qp[0]),x2:SX(best.p[1]),y2:SY(best.p[0]),stroke:'var(--loss)','stroke-width':2.5,'stroke-dasharray':'3 3'},press);
+    el('circle',{cx:SX(qp[1]),cy:SY(qp[0]),r:16,fill:'none',stroke:'var(--loss)','stroke-width':2.5},press);
+    el('text',{x:SX(qp[1])+20,y:SY(qp[0])+4,'font-size':11,style:'fill:var(--loss);font-weight:600;letter-spacing:.06em'},press).textContent='PRESSURE'}
+  const off=el('g',{},marks),op=ok==null?null:at(r.qb,ok);
+  if(op){const cx=SX(op[1]),cy=SY(op[0]);el('path',{d:`M${cx},${cy-9}l9,9l-9,9l-9,-9z`,fill:'var(--panel)',stroke:'var(--chaos)','stroke-width':2.5},off);
+    el('text',{x:cx-14,y:cy+4,'text-anchor':'end','font-size':11,style:'fill:var(--chaos);font-weight:600;letter-spacing:.06em'},off).textContent='OFF SCRIPT'}
+  const rush=r.rushers.map(x=>{const g=el('g',{},dots);
+    if(x.credited)el('circle',{r:13,fill:'none',stroke:'var(--rush)','stroke-width':2},g);
+    el('circle',{r:7,fill:'var(--rush)',stroke:'var(--panel)','stroke-width':2},g);
+    if(x.credited)el('text',{y:27,'text-anchor':'middle','font-size':12,style:'fill:var(--ink);font-weight:600'},g).textContent=lastName(x.name);
+    g.addEventListener('mousemove',e=>showTip(`<b>${esc(x.name||'Pass rusher')}</b><br>Pass rusher${x.credited?', PFF credits a hit, hurry or sack':''}`,e));g.addEventListener('mouseleave',hideTip);
+    return [x,g]});
+  const ball=el('circle',{r:4,fill:'var(--ball)',stroke:'var(--panel)','stroke-width':1.5},dots);
+  const qg=el('g',{class:'qb'},dots);
+  el('circle',{class:'halo',r:20,fill:'var(--qb-halo)'},qg);
+  el('circle',{r:11,fill:'var(--qb)',stroke:'var(--panel)','stroke-width':3},qg);
+  const tag=el('g',{transform:'translate(0,-36)'},qg),tr=el('rect',{y:-12,height:24,rx:12,fill:'var(--qb)'},tag);
+  const tt=el('text',{y:4,'text-anchor':'middle','font-size':12,style:'fill:var(--panel);font-weight:600;letter-spacing:.06em'},tag);
+  tt.textContent=`QB · ${lastName(sel.name).toUpperCase()}`;
+  const tw=(tt.getComputedTextLength?tt.getComputedTextLength():80)+22;tr.setAttribute('x',-tw/2);tr.setAttribute('width',tw);
+  el('path',{d:'M-5,12l5,7l5,-7z',fill:'var(--qb)'},tag);
+  qg.addEventListener('mousemove',e=>showTip(`<b>${esc(sel.name)}</b><br>Quarterback, ${esc(sel.team)}`,e));qg.addEventListener('mouseleave',hideTip);
+  F={SX,SY,trail,drop,press,off,rush,qg,ball,pk,ok,dk:r.drop_frame-r.snap_frame};
+}
+function draw(i){
+  const r=cur;if(!r||!F)return;const n=r.qb.length/2;
+  const mv=(g,p)=>{if(p){g.removeAttribute('visibility');g.setAttribute('transform',`translate(${F.SX(p[1])},${F.SY(p[0])})`)}else g.setAttribute('visibility','hidden')};
+  F.rush.forEach(([x,g])=>mv(g,at(x.xy,i)));mv(F.qg,at(r.qb,i));
+  const b=at(r.ball,i);if(b){F.ball.setAttribute('cx',F.SX(b[1]));F.ball.setAttribute('cy',F.SY(b[0]))}
+  F.trail.innerHTML='';
+  for(let k=1;k<=i;k++){const a=at(r.qb,k-1),c=at(r.qb,k);if(!a||!c)continue;
+    el('line',{x1:F.SX(a[1]),y1:F.SY(a[0]),x2:F.SX(c[1]),y2:F.SY(c[0]),stroke:F.ok!=null&&k>=F.ok?'var(--chaos)':'var(--ink-3)','stroke-width':4.5,'stroke-linecap':'round'},F.trail)}
+  F.drop.setAttribute('visibility',i>=F.dk?'visible':'hidden');
+  F.press.setAttribute('visibility',i>=F.pk?'visible':'hidden');
+  F.off.setAttribute('visibility',F.ok!=null&&i>=F.ok?'visible':'hidden');
+  const now=F.ok!=null&&i>=F.ok?'chaos':'scripted';
+  const note=r.label==='scripted'?'On script all play':now==='chaos'?RULE_SHORT[r.off_script_rule]:`Goes off script at ${secs(F.ok)}`;
+  $('live').innerHTML=`<span class="t">${secs(i)} after snap · frame ${i+1}/${n}</span><span>${badge(now)}</span><span class="small">${esc(note)}</span>`;
+  scrub.value=i;
+}
+btn.addEventListener('click',()=>{if(!cur)return;if(timer){stop();return}
+  const n=cur.qb.length/2;if(fi>=n-1)fi=0;btn.textContent='Pause';
+  timer=setInterval(()=>{fi++;draw(fi);if(fi>=n-1)stop()},1000/FPS/speed)});
+spd.addEventListener('click',()=>{speed=speed===1?0.5:1;spd.textContent=speed===1?'1x':'0.5x';if(timer){stop();btn.click()}});
+scrub.addEventListener('input',()=>{stop();fi=+scrub.value;draw(fi)});
+qsel.addEventListener('change',()=>selectQB(QB.find(q=>String(q.qbId)===qsel.value)));
+document.querySelectorAll('.seg [data-f]').forEach(b=>b.addEventListener('click',()=>{filt=b.dataset.f;document.querySelectorAll('.seg [data-f]').forEach(x=>x.setAttribute('aria-pressed',x===b));fillPlays()}));
+function selectQB(q){sel=q;qsel.value=q.qbId;renderScatter();renderCard();fillPlays()}
+
+/* League curve */
+let view='no_hold';
+const CURVE_NOTE={
+  no_hold:'Labels from the drift and box rules only. Plays that broke only the hold rule count as scripted here, so scripted plays can reach the long bins.',
+  split:'Main labels, with off-script plays split by the first rule broken. Scripted plays cannot reach the long bins, because a long hold is itself off script.'};
+$('curve-line').textContent=`Each point is the success rate of pressured plays, binned by the time from the pressure frame to the throw, sack or run (${T.curve_bin_seconds} s bins; ${T.curve_max_seconds} s and longer pooled). Hover a bin for rates and counts.`;
+function renderCurve(){
+  const rows=D.curve.filter(r=>r.view===view),svg=$('curve'),W=Math.max(300,$('curve-wrap').clientWidth),narrow=W<640;
+  const names=[...new Set(rows.map(r=>r.line))].sort((a,b)=>(a!=='scripted')-(b!=='scripted')||a.localeCompare(b));
+  const COL=['var(--script)','var(--chaos)','var(--s3)','var(--s4)'],col=nm=>COL[names.indexOf(nm)%COL.length];
+  const bins=[...new Map(rows.map(r=>[r.bin_start,r.bin_label])).entries()].sort((a,b)=>a[0]-b[0]);
+  const H=narrow?280:340,L=46,R=W-(narrow?14:190),Tp=14,B=H-44;
+  svg.innerHTML='';svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
+  const hi=Math.max(...rows.map(r=>r.success_rate??0)),tk=niceTicks(0,hi,5),ymax=Math.max(...tk.out)<hi?Math.max(...tk.out)+tk.step:Math.max(...tk.out);
+  const X=j=>L+(R-L)*(bins.length===1?0.5:j/(bins.length-1)),Y=v=>B-(B-Tp)*v/ymax;
+  niceTicks(0,ymax,5).out.forEach(v=>{el('line',{x1:L,x2:R,y1:Y(v),y2:Y(v),stroke:v===0?'var(--ink-3)':'var(--grid)'},svg);el('text',{x:L-8,y:Y(v)+4,'text-anchor':'end','font-size':12},svg).textContent=Math.round(v*100)+'%'});
+  bins.forEach(([,lab],j)=>{el('text',{x:X(j),y:B+18,'text-anchor':'middle','font-size':narrow?11:12},svg).textContent=lab});
+  el('text',{x:(L+R)/2,y:B+38,'text-anchor':'middle','font-size':13},svg).textContent='Seconds held after pressure';
+  const cross=el('line',{y1:Tp,y2:B,stroke:'var(--ink-3)',visibility:'hidden'},svg);
+  names.forEach(nm=>{
+    const p=bins.map(([b],j)=>{const r=rows.find(x=>x.line===nm&&x.bin_start===b);return r&&r.success_rate!=null?[X(j),Y(r.success_rate)]:null});
+    let d='';p.forEach((q,j)=>{if(q)d+=(d&&p[j-1]?'L':'M')+q[0]+','+q[1]});
+    el('path',{d,fill:'none',stroke:col(nm),'stroke-width':2,'stroke-linejoin':'round'},svg);
+    p.forEach(q=>{if(q)el('circle',{cx:q[0],cy:q[1],r:4,fill:col(nm),stroke:'var(--panel)','stroke-width':2},svg)});
+    const last=[...p].reverse().find(Boolean);
+    if(!narrow&&last)el('text',{x:last[0]+10,y:last[1]+4,'font-size':12,style:'fill:var(--ink)'},svg).textContent=lineName(nm);
+  });
+  bins.forEach(([b,lab],j)=>{const w=(R-L)/Math.max(1,bins.length-1);
+    const hit=el('rect',{x:X(j)-w/2,y:Tp,width:w,height:B-Tp,fill:'transparent'},svg);
+    hit.addEventListener('mousemove',e=>{cross.setAttribute('x1',X(j));cross.setAttribute('x2',X(j));cross.removeAttribute('visibility');
+      showTip(`<b>${lab} s after pressure</b><br>`+names.map(nm=>{const r=rows.find(x=>x.line===nm&&x.bin_start===b);return `<i class="sw" style="background:${col(nm)}"></i>${esc(lineName(nm))}: ${r?`${pct(r.success_rate)} (n=${r.success_plays})`:'no plays'}`}).join('<br>'),e)});
+    hit.addEventListener('mouseleave',()=>{cross.setAttribute('visibility','hidden');hideTip()})});
+  $('curve-legend').innerHTML=names.map(nm=>`<span><i class="sw line" style="background:${col(nm)}"></i>${esc(lineName(nm))} (n=${rows.filter(r=>r.line===nm).reduce((s,r)=>s+r.plays,0)})</span>`).join('');
+  $('curve-note').textContent=CURVE_NOTE[view]||'';
+  $('curve-tbl').innerHTML=`<tr><th>Plays per bin</th>${bins.map(([,lab])=>`<th>${esc(lab)} s</th>`).join('')}</tr>`+
+    names.map(nm=>`<tr><td>${esc(lineName(nm))}</td>${bins.map(([b])=>{const r=rows.find(x=>x.line===nm&&x.bin_start===b);return `<td>${r?r.plays:0}</td>`}).join('')}</tr>`).join('');
+}
+document.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.v;document.querySelectorAll('[data-v]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderCurve()}));
+
+selectQB(sel);renderCurve();
+let lastW=innerWidth,rz=0;
+addEventListener('resize',()=>{if(innerWidth===lastW)return;lastW=innerWidth;cancelAnimationFrame(rz);rz=requestAnimationFrame(()=>{renderScatter();renderCurve();if(cur){buildField();draw(fi)}})});
+</script>
+</body>
+</html>

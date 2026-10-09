@@ -1,0 +1,57 @@
+[
+ {
+  "group": "label",
+  "value": "chaos",
+  "plays": 1175,
+  "success_plays": 1169,
+  "success_rate": 0.245508982,
+  "sacks": 375,
+  "sack_rate": 0.3191489362,
+  "ints": 24,
+  "int_rate": 0.0204255319
+ },
+ {
+  "group": "label",
+  "value": "scripted",
+  "plays": 1200,
+  "success_plays": 1194,
+  "success_rate": 0.3366834171,
+  "sacks": 140,
+  "sack_rate": 0.1166666667,
+  "ints": 36,
+  "int_rate": 0.03
+ },
+ {
+  "group": "chaos by off_script_rule",
+  "value": "box",
+  "plays": 406,
+  "success_plays": 402,
+  "success_rate": 0.2139303483,
+  "sacks": 101,
+  "sack_rate": 0.2487684729,
+  "ints": 7,
+  "int_rate": 0.0172413793
+ },
+ {
+  "group": "chaos by off_script_rule",
+  "value": "drift",
+  "plays": 472,
+  "success_plays": 470,
+  "success_rate": 0.3255319149,
+  "sacks": 127,
+  "sack_rate": 0.2690677966,
+  "ints": 12,
+  "int_rate": 0.0254237288
+ },
+ {
+  "group": "chaos by off_script_rule",
+  "value": "hold",
+  "plays": 297,
+  "success_plays": 297,
+  "success_rate": 0.1616161616,
+  "sacks": 147,
+  "sack_rate": 0.4949494949,
+  "ints": 5,
+  "int_rate": 0.0168350168
+ }
+]

@@ -1,0 +1,73 @@
+{
+ "build_date": "2026-10-09",
+ "scope": {
+  "seasons": [
+   2021
+  ],
+  "weeks": [
+   1,
+   8
+  ],
+  "games": 122
+ },
+ "counts": {
+  "labelled_plays": 8094,
+  "pressured_plays": 2375,
+  "qbs": 54,
+  "qbs_shown": 35,
+  "replays": 2264
+ },
+ "thresholds": {
+  "pressure_distance": 2.1,
+  "drift": 2.74,
+  "hold": 4.0,
+  "success_ratio": {
+   "1": 0.4,
+   "2": 0.6,
+   "3": 1.0,
+   "4": 1.0
+  },
+  "curve_bin_seconds": 0.5,
+  "curve_max_seconds": 3.5,
+  "off_script_rule_order": [
+   "box",
+   "drift",
+   "hold"
+  ],
+  "qb_min_plays": 8,
+  "frames_per_second": 10
+ },
+ "designed_dropbacks": [
+  "DESIGNED_ROLLOUT_LEFT",
+  "DESIGNED_ROLLOUT_RIGHT",
+  "DESIGNED_RUN"
+ ],
+ "priors": {
+  "chaos_success": {
+   "alpha": 12.916788211388852,
+   "beta": 40.66606750098955,
+   "prior_mean": 0.24106195983139603,
+   "prior_strength": 53.582855712378404,
+   "qbs": 50,
+   "pooled_rate": 0.24550898203592814
+  },
+  "scripted_success": {
+   "alpha": 68.14700596224964,
+   "beta": 134.89702470918283,
+   "prior_mean": 0.3356267393673133,
+   "prior_strength": 203.04403067143247,
+   "qbs": 53,
+   "pooled_rate": 0.33668341708542715
+  }
+ },
+ "league": {
+  "chaos_rate": 0.49473684210526314,
+  "chaos_success_rate": 0.24550898203592814,
+  "scripted_success_rate": 0.33668341708542715,
+  "chaos_value": -0.09117443504949901
+ },
+ "quadrant_splits": {
+  "chaos_rate": 0.49473684210526314,
+  "chaos_value": -0.09117443504949901
+ }
+}

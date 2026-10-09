@@ -62,6 +62,15 @@ QB_SUMMARY_PATH = OUTPUTS_DIR / f"qb_summary.{OUTPUT_FORMAT}"
 QB_PRIOR_PATH = OUTPUTS_DIR / "qb_prior.json"  # fitted priors and league split values
 PLOTS_DIR = OUTPUTS_DIR / "plots"
 
+# Visualiser export (Tasks 6-7, ``python -m src.visualiser``).
+EXPORT_QB_SUMMARY_PATH = EXPORT_DIR / "qb_summary.json"
+EXPORT_LEAGUE_SUMMARY_PATH = EXPORT_DIR / "league_summary.json"
+EXPORT_LEAGUE_CURVE_PATH = EXPORT_DIR / "league_curve.json"
+EXPORT_REPLAYS_PATH = EXPORT_DIR / "replays.json"
+EXPORT_META_PATH = EXPORT_DIR / "meta.json"
+VISUALISER_TEMPLATE = ROOT / "src" / "visualiser_template.html"
+VISUALISER_PATH = EXPORT_DIR / "script_vs_chaos.html"
+
 # dropBackType groups. Designed plays are left out of labels and analysis
 # (movement is part of the call); scramble types are the expected chaos plays.
 DESIGNED_DROPBACKS = ["DESIGNED_ROLLOUT_LEFT", "DESIGNED_ROLLOUT_RIGHT", "DESIGNED_RUN"]
