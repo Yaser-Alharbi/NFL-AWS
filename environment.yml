@@ -1,0 +1,16 @@
+name: nfl-dbb
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - jupyter
+  - pip
+  - pip:
+      # add pip-only packages here as the project grows
+      []

@@ -1,0 +1,12 @@
+# NFL Big Data Bowl (nfl-dbb) - pip requirements
+# Install with: pip install -r requirements.txt
+# (pair with a venv:  python -m venv .venv  &&  .venv\Scripts\activate)
+
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+jupyter
+
+# add project-specific packages below as the work grows
