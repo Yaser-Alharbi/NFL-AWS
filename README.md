@@ -4,7 +4,7 @@
 
 Live Demo:
 
-[https://yaser-alharbi.github.io/NFL-AWS/export/script_vs_chaos.html](https://yaser-alharbi.github.io/NFL-AWS-Hackathon-Winner/export/script_vs_chaos.html)
+[[https://yaser-alharbi.github.io/NFL-AWS/export/script_vs_chaos.html](https://yaser-alharbi.github.io/NFL-AWS-Hackathon-Winner/export/script_vs_chaos.html)](https://yaser-alharbi.github.io/NFL-AWS-Hackathon-Winner/)
 
 > When a QB's pass play breaks down under pressure, does leaving the script help or hurt?
 
